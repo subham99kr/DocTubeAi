@@ -1,4 +1,3 @@
-# pdf_handler.py --- complete this file
 import os
 import shutil
 from fastapi import UploadFile

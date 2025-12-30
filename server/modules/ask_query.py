@@ -4,7 +4,6 @@ import logging
 import httpx
 from typing import Dict, Any
 from dotenv import load_dotenv
-from psycopg_pool import AsyncConnectionPool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from nodes.tavily_search_node import internet_search
 from nodes.vector_search_node import docs_or_Youtube_Transcript_or_knowledgeBase_Search
@@ -12,7 +11,8 @@ from nodes.web_scraper_node import web_scraper_node
 from modules.llm import summary_llm,get_model
 from langchain.messages import HumanMessage
 from tavily import AsyncTavilyClient
-from graph.graph_builder import RAGGraphBuilder 
+from graph.graph_builder import RAGGraphBuilder
+from global_modules.pg_pool import get_pg_pool
 
 
 
@@ -25,18 +25,16 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-POSTGRES_DB_URL = os.getenv("POSTGRES_DB_URL")
 
 # defining global variable to for using singleton pattern
-_PG_POOL = None
-_CHECKPOINTER = None
+_CHECKPOINTER = None 
 _COMPILED_GRAPH = None
 _TAVILY_CLIENT = None
 _HTTP_CLIENT = None
 
 async def global_init():
     """This runs only once and makes required connections for everyone to use"""
-    global _PG_POOL, _CHECKPOINTER, _COMPILED_GRAPH, _TAVILY_CLIENT, _HTTP_CLIENT
+    global  _CHECKPOINTER, _COMPILED_GRAPH, _TAVILY_CLIENT, _HTTP_CLIENT
 
     if _TAVILY_CLIENT is None:
         _TAVILY_CLIENT = AsyncTavilyClient(os.getenv("TAVILY_API_KEY"))
@@ -46,14 +44,10 @@ async def global_init():
         _HTTP_CLIENT = httpx.AsyncClient(timeout=httpx.Timeout(30.0), follow_redirects=True)
         logger.info("✅ HTTP Client Initialized")
         
-    if _PG_POOL is None:
-        _PG_POOL = AsyncConnectionPool(conninfo=POSTGRES_DB_URL, max_size=10, open=False)
-        await _PG_POOL.open()
-        await _PG_POOL.wait()
-        logger.info("✅ Postgres Pool Initialized")
+    pool = await get_pg_pool()
 
     if _COMPILED_GRAPH is None:
-        _CHECKPOINTER = AsyncPostgresSaver(_PG_POOL)
+        _CHECKPOINTER = AsyncPostgresSaver(pool)
         
         builder = RAGGraphBuilder(
             llm=get_model,
@@ -67,7 +61,8 @@ async def global_init():
 
 async def _get_or_create_user(oauth_id: str) -> str:
     oauth_str = oauth_id or "guest_user"
-    async with _PG_POOL.connection() as conn:
+    pool = await get_pg_pool()
+    async with pool.connection() as conn:
         async with conn.cursor() as cur:
             await cur.execute("SELECT userId FROM public.users WHERE oauth = %s", (oauth_str,))
             row = await cur.fetchone()
@@ -83,7 +78,8 @@ async def _get_or_create_user(oauth_id: str) -> str:
 
 async def _ensure_session(session_id: str, user_id: str) -> str:
     """Ensures session exists and returns the session_id."""
-    async with _PG_POOL.connection() as conn:
+    pool = await get_pg_pool()
+    async with pool.connection() as conn:
         async with conn.cursor() as cur:
             await cur.execute("SELECT session_id FROM public.sessions WHERE session_id = %s", (session_id,))
             row = await cur.fetchone()
