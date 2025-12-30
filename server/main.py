@@ -68,7 +68,7 @@ async def upload_pdfs(
         session_id: str = Form(...),
 ):
     try: 
-        saved_paths = save_uploaded_files(files, session_id)
+        saved_paths = await save_uploaded_files(files, session_id)
         logger.info("Saved files: %s", saved_paths)
     except Exception as e:
         logger.exception("Error saving uploaded files")
@@ -76,14 +76,14 @@ async def upload_pdfs(
             ## now if everything ok i.e I have saved files paths and can proceed to ingest
 
     try:
-        result = ingest_files_to_mongo(
+        result = await ingest_files_to_mongo(
             file_paths=saved_paths,
             session_id=session_id,
             keep_local= False,
         )
         ingest_status = result.get("status")
         
-        return JSONResponse(status_code=200, content={ingest_status})
+        return JSONResponse(status_code=200, content={"status":ingest_status})
     except Exception as e:
         logger.exception("Ingest failed: %s", e)
         # keep local files for debugging
