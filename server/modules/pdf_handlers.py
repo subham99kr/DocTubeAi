@@ -48,15 +48,19 @@ async def append_pdfs_to_db(session_id: str, filenames: List[str]):
     # array_cat merges the existing array with the new one.
     # COALESCE handles the edge case where the column might be NULL.
     query = """
-        UPDATE sessions 
-        SET pdfs_uploaded = array_cat(COALESCE(pdfs_uploaded, '{}'), %s)
-        WHERE session_id = %s
+        INSERT INTO sessions (session_id, pdfs_uploaded, created_at)
+        VALUES (%s, %s, NOW())
+        ON CONFLICT (session_id) 
+        DO UPDATE SET 
+            pdfs_uploaded = array_cat(COALESCE(sessions.pdfs_uploaded, '{}'), EXCLUDED.pdfs_uploaded);
     """
     
     try:
         async with pool.connection() as conn:
             async with conn.cursor() as cur:
-                await cur.execute(query, (filenames, session_id))
+                await cur.execute(query, (session_id,filenames))
+
+            await conn.commit()   # because of this the db table was not populating
                 # Connection context manager automatically commits if no exception occurs
         logger.info(f"🟢Successfully appended {len(filenames)} files to session {session_id}")
     except Exception as e:

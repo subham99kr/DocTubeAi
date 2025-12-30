@@ -10,37 +10,6 @@ from mongodb.vector_ingest import ingest_files_to_mongo
 from api.rag_router import router as rag_router
 from contextlib import asynccontextmanager
 
-# from modules.ask_query import (
-#     global_init, 
-#     _PG_POOL, 
-#     _HTTP_CLIENT, 
-#     _MONGO_CLIENT,
-# )
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     # --- STARTUP ---
-#     # This runs when the server starts. It warms up the DB pools and compiles the graph.
-#     try:
-#         await global_init()
-#         logger.info("🚀 Global resources (Postgres, Mongo, Graph) initialized successfully")
-#     except Exception as e:
-#         logger.error(f"❌ Failed to initialize global resources: {e}")
-    
-#     yield  # The application runs here
-    
-#     # --- SHUTDOWN ---
-#     # This runs when you stop the server (Ctrl+C). Prevents the "pool-worker" hang error.
-#     logger.info("🛑 Shutting down resources...")
-#     if _PG_POOL:
-#         await _PG_POOL.close()
-#         logger.info("✅ Postgres pool closed.")
-#     if _HTTP_CLIENT:
-#         await _HTTP_CLIENT.aclose()
-#         logger.info("✅ HTTP client closed.")
-#     if _MONGO_CLIENT:
-#         _MONGO_CLIENT.close()
-#         logger.info("✅ Mongo client closed.")
 
 app = FastAPI(title="DocTubeAI Server", version="1.0.0")
 
