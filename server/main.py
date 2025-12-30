@@ -74,11 +74,11 @@ async def load_transcripts_endpoint(
     """
     try:
         logger.info(f"Received {url} YouTube URLs for transcript loading")
-        load_transcript(url,session_id=session_id)
-        logger.info("Transcripts added to vector db successfully")
-        return JSONResponse(status_code=200, content={"message": "Transcripts processed and vectorstore updated"})
+        await load_transcript(url,session_id=session_id)
+        logger.info("🟢 Transcripts added to vector db successfully")
+        return JSONResponse(status_code=200, content={"status": "Transcripts processed and vectorstore updated"})
     except Exception as e:
-        logger.exception("Error during transcript loading")
+        logger.exception("🔴 Error during transcript loading")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
