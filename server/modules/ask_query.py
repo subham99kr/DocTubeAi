@@ -1,7 +1,5 @@
 import os
-import uuid
 import logging
-import httpx
 from typing import Dict, Any
 from dotenv import load_dotenv
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -13,6 +11,7 @@ from langchain.messages import HumanMessage
 from tavily import AsyncTavilyClient
 from graph.graph_builder import RAGGraphBuilder
 from global_modules.pg_pool import get_pg_pool
+from global_modules.http_client import get_http_client
 
 
 
@@ -30,19 +29,15 @@ load_dotenv()
 _CHECKPOINTER = None 
 _COMPILED_GRAPH = None
 _TAVILY_CLIENT = None
-_HTTP_CLIENT = None
 
 async def global_init():
     """This runs only once and makes required connections for everyone to use"""
-    global  _CHECKPOINTER, _COMPILED_GRAPH, _TAVILY_CLIENT, _HTTP_CLIENT
+    global  _CHECKPOINTER, _COMPILED_GRAPH, _TAVILY_CLIENT
 
     if _TAVILY_CLIENT is None:
         _TAVILY_CLIENT = AsyncTavilyClient(os.getenv("TAVILY_API_KEY"))
         logger.info("✅ Tavily Client Initialized")
 
-    if _HTTP_CLIENT is None:
-        _HTTP_CLIENT = httpx.AsyncClient(timeout=httpx.Timeout(30.0), follow_redirects=True)
-        logger.info("✅ HTTP Client Initialized")
         
     pool = await get_pg_pool()
 
@@ -59,41 +54,10 @@ async def global_init():
 
     return _COMPILED_GRAPH
 
-async def _get_or_create_user(oauth_id: str) -> str:
-    oauth_str = oauth_id or "guest_user"
-    pool = await get_pg_pool()
-    async with pool.connection() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute("SELECT userId FROM public.users WHERE oauth = %s", (oauth_str,))
-            row = await cur.fetchone()
-            if row:
-                return row[0]
-            
-            user_id = str(uuid.uuid4())
-            await cur.execute(
-                "INSERT INTO public.users (userId, oauth) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                (user_id, oauth_str)
-            )
-            return user_id
-
-async def _ensure_session(session_id: str, user_id: str) -> str:
-    """Ensures session exists and returns the session_id."""
-    pool = await get_pg_pool()
-    async with pool.connection() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute("SELECT session_id FROM public.sessions WHERE session_id = %s", (session_id,))
-            row = await cur.fetchone()
-            if not row:
-                await cur.execute(
-                    "INSERT INTO public.sessions (session_id, user_id, last_activity) VALUES (%s, %s, now())",
-                    (session_id, user_id)
-                )
-            return session_id
 
 async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
     query = obj.get("users_query", "")
     session_id = obj.get("session_id")
-    oauth_id = obj.get("oauthID")
 
     try:
         # 1. Validation
@@ -105,16 +69,12 @@ async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"🦜Starting graph execution for session: {session_id}")
         await global_init()
 
-        # 3. User & Session Setup
-        logger.info("Setting up user and session...")
-        user_id = await _get_or_create_user(oauth_id)
-        await _ensure_session(session_id, user_id)
-
+        http_client = await get_http_client()
         # 4. Setting up config
         config = {"configurable": {
             "thread_id": session_id,
             "tavily_client": _TAVILY_CLIENT,
-            "http_client": _HTTP_CLIENT,    
+            "http_client": http_client,    
             "session_id": session_id,
         }}
         
@@ -138,7 +98,7 @@ async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
                 break
         
         return {
-            "answer": str(final_answer),
+            "answer": final_answer,
             "session_id": session_id,
             "status": "success",
             "code": 200,

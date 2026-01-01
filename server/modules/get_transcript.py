@@ -60,7 +60,7 @@ def to_english(text: str) -> str:
 
 
 
-def get_video_title(url: str) -> str:
+async def get_video_title(url: str) -> str:
     """
     Fetches the title of the YouTube video at `url`.
     """

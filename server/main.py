@@ -8,7 +8,8 @@ import uuid
 from modules.pdf_handlers import save_uploaded_files, delete_local_files
 from mongodb.vector_ingest import ingest_files_to_mongo
 from api.rag_router import router as rag_router
-from contextlib import asynccontextmanager
+from api.auth_router import router as auth_router
+from modules.verify_session import verify_and_initialize_session
 
 
 app = FastAPI(title="DocTubeAI Server", version="1.0.0")
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(rag_router)
+app.include_router(auth_router)
 
 @app.middleware("http")
 async def catch_exception_middleware(request: Request, call_next):
@@ -35,7 +37,9 @@ async def catch_exception_middleware(request: Request, call_next):
 async def upload_pdfs(
         files: List[UploadFile] = File(...),
         session_id: str = Form(...),
+        oauth_id: str = Form(...)
 ):
+    await verify_and_initialize_session(session_id,oauth_id)
     try: 
         saved_paths = await save_uploaded_files(files, session_id)
         logger.info("Saved files: %s", saved_paths)
@@ -63,6 +67,7 @@ async def upload_pdfs(
 @app.post("/load_transcript/")
 async def load_transcripts_endpoint(
     url:str = Form(...) ,
+    oauth_id: str = Form(...),
     session_id : str = Form(...)):
     """
     Accepts a JSON body like:
@@ -72,6 +77,7 @@ async def load_transcripts_endpoint(
     }
     Extracts transcripts, stores them in Chroma.
     """
+    await verify_and_initialize_session(session_id,oauth_id)
     try:
         logger.info(f"Received {url} YouTube URLs for transcript loading")
         await load_transcript(url,session_id=session_id)
