@@ -69,7 +69,7 @@ async def auth_callback(code: str):
         # 6. Return the Secure Token to your Frontend
         return JSONResponse(content={
             "status": "success",
-            "access_token": access_token,  # This is the 'gibberish' token
+            "access_token": access_token,  # this is the gibberish token
             "token_type": "bearer",
             "user": {
                 "email": email,

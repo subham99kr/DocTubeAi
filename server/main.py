@@ -10,6 +10,10 @@ from mongodb.vector_ingest import ingest_files_to_mongo
 from api.rag_router import router as rag_router
 from api.auth_router import router as auth_router
 from modules.verify_session import verify_and_initialize_session
+from auth.dependencies import get_current_user_optional
+from fastapi import Depends
+from global_modules.pg_pool import get_pg_pool
+from datetime import datetime
 
 
 app = FastAPI(title="DocTubeAI Server", version="1.0.0")
@@ -35,66 +39,70 @@ async def catch_exception_middleware(request: Request, call_next):
 
 @app.post("/upload_pdfs/")
 async def upload_pdfs(
-        files: List[UploadFile] = File(...),
-        session_id: str = Form(...),
-        oauth_id: str = Form(...)
+    files: List[UploadFile] = File(...),
+    session_id: str = Form(...),
+    # Securely get the user from the JWT header, not a form field
+    oauth_id: str = Depends(get_current_user_optional) 
 ):
-    await verify_and_initialize_session(session_id,oauth_id)
+    await verify_and_initialize_session(session_id, oauth_id)
+    
     try: 
         saved_paths = await save_uploaded_files(files, session_id)
-        logger.info("Saved files: %s", saved_paths)
-    except Exception as e:
-        logger.exception("Error saving uploaded files")
-        return JSONResponse(status_code=500, content={"error": str(e)})
-            ## now if everything ok i.e I have saved files paths and can proceed to ingest
+        # Extract filenames to store in Postgres
+        filenames = [f.filename for f in files]
+        
+        # 1. Update Postgres: Add filenames to array and refresh timestamp
+        pool = await get_pg_pool()
+        query = """
+            UPDATE sessions 
+            SET pdfs_uploaded = array_cat(pdfs_uploaded, %s),
+                last_activity = NOW()
+            WHERE session_id = %s AND (oauth_id = %s OR oauth_id IS NULL);
+        """
+        async with pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(query, (filenames, session_id, oauth_id))
+            await conn.commit()
 
-    try:
+        # 2. Proceed to Vector Ingest
         result = await ingest_files_to_mongo(
             file_paths=saved_paths,
             session_id=session_id,
-            keep_local= False,
+            keep_local=False,
         )
-        ingest_status = result.get("status")
-        
-        return JSONResponse(status_code=200, content={"status":ingest_status})
-    except Exception as e:
-        logger.exception("Ingest failed: %s", e)
-        # keep local files for debugging
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return JSONResponse(status_code=200, content={"status": result.get("status")})
 
+    except Exception as e:
+        logger.exception("Upload/Ingest failed")
+        return JSONResponse(status_code=500, content={"error": str(e)})
     
    
 @app.post("/load_transcript/")
 async def load_transcripts_endpoint(
-    url:str = Form(...) ,
-    oauth_id: str = Form(...),
-    session_id : str = Form(...)):
-    """
-    Accepts a JSON body like:
-    {
-        "url": "https://www.youtube.com/watch?v=yyyy"
-       
-    }
-    Extracts transcripts, stores them in Chroma.
-    """
-    await verify_and_initialize_session(session_id,oauth_id)
+    url: str = Form(...),
+    session_id: str = Form(...),
+    oauth_id: str = Depends(get_current_user_optional)
+):
+    await verify_and_initialize_session(session_id, oauth_id)
     try:
-        logger.info(f"Received {url} YouTube URLs for transcript loading")
-        await load_transcript(url,session_id=session_id)
-        logger.info("🟢 Transcripts added to vector db successfully")
-        return JSONResponse(status_code=200, content={"status": "Transcripts processed and vectorstore updated"})
+        await load_transcript(url, session_id=session_id)
+        
+        # Update Postgres: Add URL to the jsonb list
+        pool = await get_pg_pool()
+        new_link = {"url": url, "added_at": str(datetime.now())}
+        
+        query = """
+            UPDATE sessions 
+            SET url_links = url_links || %s::jsonb,
+                last_activity = NOW()
+            WHERE session_id = %s;
+        """
+        async with pool.connection() as conn:
+            async with conn.cursor() as cur:
+                import json
+                await cur.execute(query, (json.dumps([new_link]), session_id))
+            await conn.commit()
+
+        return JSONResponse(status_code=200, content={"status": "Success"})
     except Exception as e:
-        logger.exception("🔴 Error during transcript loading")
         return JSONResponse(status_code=500, content={"error": str(e)})
-
-
-
-@app.get("/test")
-async def test():
-    return {"message": "Test successful!"}
-
-@app.get("/create_new_session")
-async def create_new_session():
-    session_id = str(uuid.uuid4())
-    return {"session_id",session_id}
-

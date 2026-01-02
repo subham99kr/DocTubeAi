@@ -1,5 +1,5 @@
 from fastapi import Request
-from security import decode_access_token
+from auth.security import get_oauth_id_from_token
 from typing import Optional
 
 async def get_current_user_optional(request: Request) -> Optional[str]:
@@ -13,4 +13,4 @@ async def get_current_user_optional(request: Request) -> Optional[str]:
         return None  # User is a guest
     
     token = auth_header.split(" ")[1]
-    return decode_access_token(token)
+    return get_oauth_id_from_token(token)
