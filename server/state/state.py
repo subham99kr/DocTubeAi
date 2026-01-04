@@ -7,7 +7,7 @@ class State(TypedDict):
      
     # Core Components
     messages: Annotated[Sequence[BaseMessage], add_messages]
-    summary: str
+    # summary: str
     
     # 2. Steps: Useful for debugging which nodes actually ran
     # intermediate_steps: Annotated[List[str], operator.add]

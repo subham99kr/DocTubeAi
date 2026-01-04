@@ -1,12 +1,13 @@
 import os
 import logging
-from typing import Dict, Any
+from typing import Dict, Any,AsyncGenerator
 from dotenv import load_dotenv
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from nodes.tavily_search_node import internet_search
 from nodes.vector_search_node import docs_or_Youtube_Transcript_or_knowledgeBase_Search
 from nodes.web_scraper_node import web_scraper_node
-from modules.llm import summary_llm,get_model
+from modules.llm import get_chat_model, get_tool_model
+# from modules.llm import summary_llm
 from langchain.messages import HumanMessage
 from tavily import AsyncTavilyClient
 from graph.graph_builder import RAGGraphBuilder
@@ -45,8 +46,9 @@ async def global_init():
         _CHECKPOINTER = AsyncPostgresSaver(pool)
         
         builder = RAGGraphBuilder(
-            llm=get_model,
-            summary_llm=summary_llm,
+            chat_llm_factory=get_chat_model,
+            tool_llm_factory=get_tool_model,
+            # summary_llm=summary_llm,
             tools=[docs_or_Youtube_Transcript_or_knowledgeBase_Search, internet_search, web_scraper_node]
         )
         _COMPILED_GRAPH = builder.compile(checkpointer=_CHECKPOINTER)
@@ -112,3 +114,80 @@ async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
             "status": "error",
             "code": 500
         }
+
+############################----STREAMING-----##############################################
+async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, None]:
+    """
+    Streams structured graph events + final LLM tokens.
+    """
+    query = obj.get("users_query", "")
+    session_id = obj.get("session_id")
+
+    if not query.strip():
+        yield {"type": "error", "data": "Query cannot be empty"}
+        return
+
+    logger.info(f"🦜Starting STREAMING graph execution for session: {session_id}")
+    await global_init()
+
+    http_client = await get_http_client()
+
+    config = {
+        "configurable": {
+            "thread_id": session_id,
+            "tavily_client": _TAVILY_CLIENT,
+            "http_client": http_client,
+            "session_id": session_id,
+        }
+    }
+
+    initial_state = {
+        "messages": [HumanMessage(content=query)],
+        "query": query,
+    }
+
+    # 🔑 STREAM EVENTS FROM LANGGRAPH
+    async for event in _COMPILED_GRAPH.astream_events(
+        initial_state,
+        config,
+        version="v1",
+    ):
+        event_type = event.get("event")
+
+        # -------------------------
+        # NODE START → STATUS
+        # -------------------------
+        if event_type == "on_node_start":
+            node_name = event.get("name")
+
+            if node_name == "router":
+                yield {"type": "status", "data": "Understanding your question…"}
+
+            elif node_name == "tools":
+                yield {"type": "status", "data": "Calling external tools…"}
+
+            elif node_name == "chatbot":
+                yield {"type": "status", "data": "Preparing the answer…"}
+
+        # -------------------------
+        # TOOL START → STATUS
+        # -------------------------
+        elif event_type == "on_tool_start":
+            tool_name = event.get("name")
+            yield {"type": "status", "data": f"Using {tool_name}…"}
+
+        # -------------------------
+        # FINAL LLM TOKEN STREAM
+        # -------------------------
+        elif event_type == "on_chat_model_stream":
+            # Only stream tokens from FINAL answer LLM
+            chunk = event.get("chunk")
+            if chunk:
+                yield {"type": "token", "data": chunk}
+
+        # -------------------------
+        # END
+        # -------------------------
+        elif event_type == "on_chain_end":
+            yield {"type": "done", "data": ""}
+

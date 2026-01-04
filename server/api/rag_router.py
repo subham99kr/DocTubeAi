@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
+from fastapi.responses import StreamingResponse
+import json
 
-# Import the orchestrator function
-from modules.ask_query import ask_with_graph
+from modules.ask_query import ask_with_graph,ask_with_graph_stream
 from modules.verify_session import verify_and_initialize_session 
 from auth.dependencies import get_current_user_optional
 
@@ -54,3 +55,35 @@ async def run_rag(
         raise http_e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal Error: {str(e)}")
+
+@router.post("/ask/stream")
+async def run_rag_stream(
+    req: RAGRequest,
+    oauth_id: Optional[str] = Depends(get_current_user_optional),
+):
+    """
+    Streaming RAG endpoint (SSE).
+    """
+
+    # STEP 1: Security
+    await verify_and_initialize_session(req.session_id, oauth_id)
+
+    request_obj = {
+        "users_query": req.query,
+        "session_id": req.session_id,
+        "oauthID": oauth_id,
+    }
+
+    async def event_generator():
+        async for event in ask_with_graph_stream(request_obj):
+            # SSE format
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )

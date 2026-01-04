@@ -14,7 +14,7 @@ async def summary_node(state: State, summary_llm):
         return {}
 
     # 1. IDENTIFY THE LAST TURN
-    # skip internal ToolMessages to keep the summary prompt clean.
+    # skiping internal ToolMessages to keep the summary prompt clean.
     last_human = next((m.content for m in reversed(messages) if isinstance(m, HumanMessage)), "")
     last_ai = next((m.content for m in reversed(messages) if isinstance(m, AIMessage) and not m.tool_calls), "")
 
@@ -23,17 +23,15 @@ async def summary_node(state: State, summary_llm):
 
     # 2. CONSTRUCT THE PROMPT
     prompt = (
-        f"You are a memory assistant. Update the 'Current Summary' by adding the details from the 'New Interaction'.\n\n"
-        f"Current Summary: {old_summary if old_summary else 'No history yet.'}\n\n"
+        f"Current Summary: {old_summary}\n"
         f"New Interaction:\n"
-        f"User said: {last_human}\n"
-        f"AI responded: {last_ai}\n\n"
-        "Rules:\n"
-        "- Don't update if its a greeting.\n"
-        "- Create a single cohesive paragraph.\n"
-        "- Focus on what the user is looking for and what was found.\n"
-        "- You can remove the more than 10 messages older part but keep the users details intact.\n"
-        "- Keep the total summary under 300 words."
+        f"User: {last_human}\n"
+        f"AI: {last_ai}\n\n"
+        "INSTRUCTIONS:\n"
+        "- You have to summarize it , keep things under 400 words"
+        "- Summarize the 'intent' of the code, not the code itself.\n"
+        "- Example: Instead of 'User sent @app.get...', write 'User provided a FastAPI route for review'.\n"
+        "- This keeps the memory clean for future technical questions."
     )
     
     # 3. EXECUTE

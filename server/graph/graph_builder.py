@@ -1,60 +1,75 @@
 from typing import Any, List
 from functools import partial
+
 from langgraph.graph import StateGraph, START, END
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.base import BaseCheckpointSaver
+
 from state.state import State
+from nodes.router_node import router_node
+from nodes.tool_call_node import tool_call_node
 from nodes.chatbot import chatbot_node
-from nodes.summary_node import summary_node
+# from nodes.summary_node import summary_node
+
 
 class RAGGraphBuilder:
     def __init__(
-        self, 
-        llm: Any, 
-        summary_llm: Any, 
-        tools: List[Any]
+        self,
+        chat_llm_factory: Any,
+        tool_llm_factory: Any,
+        # summary_llm: Any,
+        tools: List[Any],
     ):
-        self.llm = llm
-        self.summary_llm = summary_llm
-        
-        self.tools = tools 
+        self.chat_llm_factory = chat_llm_factory
+        self.tool_llm_factory = tool_llm_factory
+        # self.summary_llm = summary_llm
+        self.tools = tools
         self.builder = StateGraph(State)
 
     def _setup_nodes(self):
-        # 1. Chatbot Node
         self.builder.add_node(
-            "chatbot", 
-            partial(chatbot_node, llm_runnable_factory=self.llm, tools=self.tools)
+            "router",
+            partial(router_node, llm_factory=self.chat_llm_factory),
         )
 
-        # 2. Tool Node
+        self.builder.add_node(
+            "tool_call",
+            partial(
+                tool_call_node,
+                tool_llm_factory=self.tool_llm_factory,
+                tools=self.tools,
+            ),
+        )
+
         self.builder.add_node("tools", ToolNode(self.tools))
 
-        # 3. Summary Node
         self.builder.add_node(
-            "summarize", 
-            partial(summary_node, summary_llm=self.summary_llm)
+            "chatbot",
+            partial(chatbot_node, llm_runnable_factory=self.chat_llm_factory),
         )
+
+        # self.builder.add_node(
+        #     "summarize",
+        #     partial(summary_node, summary_llm=self.summary_llm),
+        # )
 
     def _setup_edges(self):
-        # 1. Start -> Chatbot
-        self.builder.add_edge(START, "chatbot")
+        self.builder.add_edge(START, "router")
 
-        # 2. Chatbot -> (tools OR summarize)
         self.builder.add_conditional_edges(
-            "chatbot",
-            tools_condition,
+            "router",
+            lambda s: s["route"],
             {
-                "tools": "tools",
-                "__end__": "summarize"   
-            }
+                "tools": "tool_call",
+                "chat": "chatbot",
+            },
         )
 
-        # 3. Tools -> Chatbot
+        self.builder.add_edge("tool_call", "tools")
         self.builder.add_edge("tools", "chatbot")
-
-        # 4. Summarize -> End
-        self.builder.add_edge("summarize", END)
+        # self.builder.add_edge("chatbot", "summarize")
+        # self.builder.add_edge("summarize", END)
+        self.builder.add_edge("chatbot", END)
 
     def compile(self, checkpointer: BaseCheckpointSaver = None):
         self._setup_nodes()
