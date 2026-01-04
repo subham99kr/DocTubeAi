@@ -16,7 +16,7 @@ BASE_UPLOAD_DIR = "./uploaded_pdfs"
 
 
 async def ensure_dir(path: str) -> None:
-    """Run directory creation in a threadpool to avoid blocking."""
+    """Run directory creation in a threadpool."""
     def create():
         Path(path).mkdir(parents=True, exist_ok=True)
     await run_in_threadpool(create) 
@@ -82,9 +82,6 @@ async def save_uploaded_files(files: List[UploadFile], session_id: str) -> List[
         
 
         safe_path = await unique_filepath(BASE_UPLOAD_DIR, upload.filename, session_id=session_id)
-        # with open(safe_path, "wb") as out_f: # this is sync. and its breaking my code
-        #     # stream copy
-        #     shutil.copyfileobj(upload.file, out_f)  # this is sync. and its breaking my code
 
         async with aiofiles.open(safe_path, "wb") as out_f:
             while content := await upload.read(1024 * 1024):  # Read in chunks of 1 MB

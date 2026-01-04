@@ -52,7 +52,7 @@ async def auth_callback(code: str):
         user_data = user_info_res.json()
         
         # 3. Extract relevant data
-        oauth_id = user_data.get("sub")  # Google's unique ID
+        oauth_id = user_data.get("sub")  
         email = user_data.get("email")
         name = user_data.get("name")
 
@@ -69,7 +69,7 @@ async def auth_callback(code: str):
         # 6. Return the Secure Token to your Frontend
         return JSONResponse(content={
             "status": "success",
-            "access_token": access_token,  # this is the gibberish token
+            "access_token": access_token,
             "token_type": "bearer",
             "user": {
                 "email": email,

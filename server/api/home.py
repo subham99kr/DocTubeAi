@@ -25,6 +25,12 @@ class HomeDataResponse(BaseModel):
 async def initialize_home_data(
     oauth_id: Optional[str] = Depends(get_current_user_optional)
 ):
+    """
+    Input Params = Oauth_id from header.
+    Get all the sessions and list of {pdfs + urls} for each session.
+
+    note: sends a new session id for new chat.
+    """
     new_id = str(uuid.uuid4())
     
     if not oauth_id:
@@ -36,7 +42,6 @@ async def initialize_home_data(
 
     pool = await get_pg_pool()
     
-    # We define the order here: 0:session_id, 1:title, 2:pdfs_uploaded, 3:url_links, 4:last_activity
     query = """
         SELECT session_id, title, pdfs_uploaded, url_links, last_activity
         FROM sessions 

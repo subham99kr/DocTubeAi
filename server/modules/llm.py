@@ -23,7 +23,7 @@ summary_llm = ChatGroq(
 def get_chatbot_prompt():
     """Returns the prompt template only."""
     return ChatPromptTemplate.from_messages([
-        ("system", """You are a helpful RAG assistant.From the users query and past messages identify which tools to use like vector search, internet search and web scraper to get context.
+        ("system", """You are a helpful RAG assistant.From the users query and past messages identify which tools to use like vector search, internet search and web scraper to get context.Answer the user's question using the provided context.If you are answering in Hindi or other language do not use JSON formatting. Provide a natural text response."
         
         GUIDELINES:
         1. Priority: Uploaded Documents > Internet Search.

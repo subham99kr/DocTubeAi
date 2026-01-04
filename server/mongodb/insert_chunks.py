@@ -1,16 +1,11 @@
-from pymongo import MongoClient, ReplaceOne
-import os
+from pymongo import ReplaceOne
 import logging
 from uuid import uuid4
-from modules.embeddings import embeddings
+from global_modules.embeddings import embeddings
+from global_modules.mongo_collections import collection
 
 from dotenv import load_dotenv
 load_dotenv()
-
-uri = os.environ.get("MONGODB_URI_STRING")
-client = MongoClient(uri)
-coll = client["rag_db"]["documents"]
-EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 logger = logging.getLogger(__name__)
 
 def insert_chunks(chunks):
@@ -19,18 +14,14 @@ def insert_chunks(chunks):
         return
 
     # -------------------- BATCH EMBEDDING --------------------
-    # FIX: Document objects use the attribute .page_content for the text.
     texts = [c.page_content for c in chunks]
     vectors = embeddings.embed_documents(texts) 
-    # -------------------------------------------------------------------------
 
     ops =[]
-    for chunk, vector_of_text in zip(chunks, vectors): 
-        # FIX: Access attributes using dot notation. 
-        # .page_content for text, .metadata for the metadata dictionary.     
+    for chunk, vector_of_text in zip(chunks, vectors):     
         text = chunk.page_content
         
-        # Access the metadata dictionary using .metadata, then use dictionary .get()
+        # Access the metadata 
         metadata = chunk.metadata 
         session_id = metadata.get("session_id")
         source = metadata.get("source")
@@ -49,7 +40,8 @@ def insert_chunks(chunks):
 
     if ops:
         try:
-            coll.bulk_write(ops, ordered=False) 
+            collection.bulk_write(ops, ordered=False)
+            logger.info(f"🟢 Bulk write completed for session : {session_id}")
         except Exception as e:
-            logger.exception("Bulk write failed")
+            logger.exception("🔴 Bulk write failed")
     print(f"Inserted {len(chunks)} chunks into MongoDB.")

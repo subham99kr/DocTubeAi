@@ -16,5 +16,5 @@ def checkpoint_setup():
         checkpointer.setup()
         print("✅ Tables created successfully.")
 
-if __name__ == "__main__":
-    checkpoint_setup()
+# if __name__ == "__main__":
+#     checkpoint_setup()

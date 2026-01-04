@@ -7,8 +7,9 @@ from langchain_core.documents import Document
 from fastapi.concurrency import run_in_threadpool
 from global_modules.pg_pool import get_pg_pool
 
-from .get_transcript import transcrpition_extractor, get_video_title
+from modules.get_transcript import transcrpition_extractor, get_video_title
 from mongodb.insert_chunks import insert_chunks
+from datetime import datetime
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -26,24 +27,32 @@ async def append_link_to_db(session_id: str, url: str, title: str):
     
     # We wrap the single dict in a list [] so the || operator 
     # performs an array concatenation in Postgres.
-    new_link_json = json.dumps([{"url": url, "title": title}])
+    new_link = {
+        "url": url, 
+        "title": title,
+        "added_at": datetime.now().isoformat()
+    }
     
+    new_link_json = json.dumps(new_link)
+
     query = """
-        INSERT INTO sessions (session_id, url_links, created_at)
-        VALUES (%s, jsonb_build_array(%s::jsonb), NOW())
+        INSERT INTO sessions (session_id, url_links, created_at, last_activity)
+        VALUES (
+            %s, 
+            jsonb_build_array(%s::jsonb), 
+            NOW(), 
+            NOW()
+        )
         ON CONFLICT (session_id) 
         DO UPDATE SET 
-            url_links = CASE 
-                WHEN sessions.url_links @> jsonb_build_array(%s::jsonb) 
-                THEN sessions.url_links 
-                ELSE sessions.url_links || jsonb_build_array(%s::jsonb)
-            END;
+            url_links = COALESCE(sessions.url_links, '[]'::jsonb) || jsonb_build_array(%s::jsonb),
+            last_activity = NOW();
     """
     
     try:
         async with pool.connection() as conn:
             async with conn.cursor() as cur:
-                await cur.execute(query, (session_id, new_link_json, new_link_json, new_link_json))
+                await cur.execute(query, (session_id, new_link_json, new_link_json))
             await conn.commit()
             
         logger.info(f"🟢 Successfully appended link to session {session_id}: {title}")
@@ -61,12 +70,9 @@ async def load_transcript(
     try:
         # 1) Fetch data in threadpool to avoid blocking the event loop
         # We run these together as a single blocking task or separately
-        def fetch_data():
-            text = transcrpition_extractor(youtube_url)
-            title = get_video_title(youtube_url)
-            return text, title
+        text = await transcrpition_extractor(youtube_url)
+        title = await get_video_title(youtube_url)
 
-        transcript_text, source = await run_in_threadpool(fetch_data)
          
     except Exception as exc:
         logger.warning("Failed to fetch transcript for %s: %s", youtube_url, exc)
@@ -74,7 +80,7 @@ async def load_transcript(
             raise
         return None
 
-    if not transcript_text or not transcript_text.strip():
+    if not text or not text.strip():
         msg = f"Empty transcript for {youtube_url}"
         logger.warning(msg)
         if raise_on_empty:
@@ -83,9 +89,9 @@ async def load_transcript(
 
     # 2) Wrap as a Document
     doc = Document(
-        page_content=transcript_text,
+        page_content=text,
         metadata={
-            "source": source,
+            "source": title,
             "session_id": session_id,
         },
     )
@@ -103,6 +109,6 @@ async def load_transcript(
     await run_in_threadpool(insert_chunks, chunks)
     logger.info("🟢 insert_chunks function completed for transcript chunks")
 
-    await append_link_to_db(session_id, youtube_url, source)
+    await append_link_to_db(session_id, youtube_url, title)
     
     return True

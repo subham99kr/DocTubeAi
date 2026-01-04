@@ -106,7 +106,7 @@ async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
 
     except Exception as e:
         # exc_info=True captures the full traceback including the line number
-        logger.error(f"❌ Error in ask_with_graph for session {session_id}: {str(e)}", exc_info=True)
+        logger.error(f"🔴 Error in ask_with_graph for session {session_id}: {str(e)}", exc_info=True)
         return {
             "answer": "An internal error occurred during processing.",
             "status": "error",
