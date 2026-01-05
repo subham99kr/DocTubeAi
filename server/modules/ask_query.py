@@ -68,7 +68,6 @@ async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
             return {"answer": "The query cannot be empty.", "code": 400}
         
         # 2. Initialization
-        logger.info(f"🦜Starting graph execution for session: {session_id}")
         await global_init()
 
         http_client = await get_http_client()
@@ -86,7 +85,7 @@ async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
         }
 
         # 5. Graph Invocation (Most likely place for errors)
-        logger.info(f"Invoking graph for thread_id: {session_id}")
+        logger.info(f"🦜 Invoking graph for session: {session_id}")
         result = await _COMPILED_GRAPH.ainvoke(initial_state, config)
         logger.info("✅ Graph invocation successful")
 
@@ -119,6 +118,7 @@ async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
 async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, None]:
     """
     Streams structured graph events + final LLM tokens.
+    Filters out router tokens and signals 'done' early for speed.
     """
     query = obj.get("users_query", "")
     session_id = obj.get("session_id")
@@ -127,9 +127,7 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
         yield {"type": "error", "data": "Query cannot be empty"}
         return
 
-    logger.info(f"🦜Starting STREAMING graph execution for session: {session_id}")
     await global_init()
-
     http_client = await get_http_client()
 
     config = {
@@ -141,53 +139,50 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
         }
     }
 
-    initial_state = {
-        "messages": [HumanMessage(content=query)],
-        "query": query,
-    }
+    initial_state = {"messages": [HumanMessage(content=query)], "query": query}
 
-    # 🔑 STREAM EVENTS FROM LANGGRAPH
-    async for event in _COMPILED_GRAPH.astream_events(
-        initial_state,
-        config,
-        version="v1",
-    ):
-        event_type = event.get("event")
+    try:
+        async for event in _COMPILED_GRAPH.astream_events(initial_state, config, version="v2"):
+            event_type = event.get("event")
+            # This is the secret to identifying WHERE the token is coming from
+            metadata = event.get("metadata", {})
+            node_name = metadata.get("langgraph_node")
 
-        # -------------------------
-        # NODE START → STATUS
-        # -------------------------
-        if event_type == "on_node_start":
-            node_name = event.get("name")
+            # -------------------------
+            # 1. STATUS UPDATES
+            # -------------------------
+            if event_type in ["on_node_start", "on_chain_start"]:
+                mapping = {
+                    "router": "Understanding your question...",
+                    "tools": "Searching for information...",
+                    "chatbot": "Generating response..."
+                }
+                # Check metadata node name first as it is more reliable
+                if node_name in mapping:
+                    yield {"type": "status", "data": mapping[node_name]}
 
-            if node_name == "router":
-                yield {"type": "status", "data": "Understanding your question…"}
+            elif event_type == "on_tool_start":
+                yield {"type": "status", "data": f"Running tool: {event.get('name')}..."}
 
-            elif node_name == "tools":
-                yield {"type": "status", "data": "Calling external tools…"}
+            # -------------------------
+            # 2. TOKEN STREAMING (Scoped to Chatbot Only)
+            # -------------------------
+            elif event_type == "on_chat_model_stream":
+                # FIX: Only yield tokens if they originate from the 'chatbot' node
+                if node_name == "chatbot":
+                    data_payload = event.get("data", {})
+                    chunk = data_payload.get("chunk")
+                    if chunk and hasattr(chunk, "content"):
+                        if token := chunk.content:
+                            yield {"type": "token", "data": token}
 
-            elif node_name == "chatbot":
-                yield {"type": "status", "data": "Preparing the answer…"}
+            # -------------------------
+            # 3. EARLY TERMINATION (Speed Fix)
+            # -------------------------
+            elif event_type in ["on_node_end", "on_chain_end"]:
+                if node_name == "chatbot":
+                    yield {"type": "done", "data": ""}
 
-        # -------------------------
-        # TOOL START → STATUS
-        # -------------------------
-        elif event_type == "on_tool_start":
-            tool_name = event.get("name")
-            yield {"type": "status", "data": f"Using {tool_name}…"}
-
-        # -------------------------
-        # FINAL LLM TOKEN STREAM
-        # -------------------------
-        elif event_type == "on_chat_model_stream":
-            # Only stream tokens from FINAL answer LLM
-            chunk = event.get("chunk")
-            if chunk:
-                yield {"type": "token", "data": chunk}
-
-        # -------------------------
-        # END
-        # -------------------------
-        elif event_type == "on_chain_end":
-            yield {"type": "done", "data": ""}
-
+    except Exception as e:
+        logger.error(f"🔴 Stream Error: {str(e)}", exc_info=True)
+        yield {"type": "error", "data": "Stream encountered an error."}

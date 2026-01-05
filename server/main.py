@@ -1,21 +1,14 @@
-from fastapi import FastAPI, UploadFile, File, Form, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
 from logger import logger
-from modules.pdf_handlers import save_uploaded_files
-from mongodb.vector_ingest import ingest_files_to_mongo
-from modules.verify_session import verify_and_initialize_session
-from auth.dependencies import get_current_user_optional
-from fastapi import Depends
 from global_modules.pg_pool import get_pg_pool,close_pg_pool
-from datetime import datetime
 from contextlib import asynccontextmanager
 
-# import routers
-from api.rag_router import router as rag_router
+# routers
+from api.chatting_router import router as chatting_router
 from api.auth_router import router as auth_router
-from api.chats_router import router as chats_router
+from api.load_chats_router import router as load_chats_router
 from api.home import router as home_router
 from api.load_transcript_router import router as transcripts_router
 from api.upload_router import router as upload_router
@@ -43,9 +36,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(rag_router)
+app.include_router(chatting_router)
 app.include_router(auth_router)
-app.include_router(chats_router)
+app.include_router(load_chats_router)
 app.include_router(home_router)
 app.include_router(transcripts_router)
 app.include_router(upload_router)

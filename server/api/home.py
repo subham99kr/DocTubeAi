@@ -12,14 +12,11 @@ router = APIRouter(tags=["Home"])
 class SessionBrief(BaseModel):
     session_id: str
     title: Optional[str] = "New Chat"
-    pdfs_uploaded: List[str]
-    url_links: List[Dict[str, str]]
     updated_at: str
 
 class HomeDataResponse(BaseModel):
-    new_session_id: str
-    history: List[SessionBrief]
-    user_status: str
+    sessions: List[SessionBrief] = []
+    user_status: str = []
 
 @router.get("/home_init", response_model=HomeDataResponse)
 async def initialize_home_data(
@@ -31,22 +28,20 @@ async def initialize_home_data(
 
     note: sends a new session id for new chat.
     """
-    new_id = str(uuid.uuid4())
     
     if not oauth_id:
         return {
-            "new_session_id": new_id,
-            "history": [],
+            "sessions": [],
             "user_status": "guest"
         }
 
     pool = await get_pg_pool()
     
     query = """
-        SELECT session_id, title, pdfs_uploaded, url_links, last_activity
+        SELECT session_id, title,last_activity
         FROM sessions 
         WHERE oauth_id = %s 
-        ORDER BY last_activity DESC;
+        ORDER BY last_activity DESC limit 20;
     """
     
     async with pool.connection() as conn:
@@ -54,18 +49,15 @@ async def initialize_home_data(
             await cur.execute(query, (oauth_id,))
             rows = await cur.fetchall()
             
-            history = []
+            sessions = []
             for row in rows:
-                history.append({
+                sessions.append({
                     "session_id": row[0],
                     "title": row[1] or "New Chat",
-                    "pdfs_uploaded": row[2] if row[2] is not None else [],
-                    "url_links": row[3] if row[3] is not None else [],
-                    "updated_at": row[4].isoformat() if row[4] else ""
+                    "updated_at": row[2].isoformat() if row[2] else ""
                 })
             
             return {
-                "new_session_id": new_id,
-                "history": history,
+                "sessions": sessions,
                 "user_status": "registered"
             }
