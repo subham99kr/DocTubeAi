@@ -40,11 +40,11 @@ async def load_transcripts_endpoint(
     try:
         # 2. Extract, Ingest, and Update DB
         # This function now handles: extracting text -> splitting -> MongoDB -> Postgres update
-        await load_transcript(url, session_id=session_id)
+        video_title = await load_transcript(url, session_id=session_id)
 
         return JSONResponse(
             status_code=200, 
-            content={"status": "Success", "session_id": session_id}
+            content={"status": "Success", "session_id": session_id, "title":video_title}
         )
 
     except HTTPException as he:

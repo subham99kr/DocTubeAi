@@ -111,4 +111,4 @@ async def load_transcript(
 
     await append_link_to_db(session_id, youtube_url, title)
     
-    return True
+    return title

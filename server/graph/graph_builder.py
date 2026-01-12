@@ -67,8 +67,6 @@ class RAGGraphBuilder:
 
         self.builder.add_edge("tool_call", "tools")
         self.builder.add_edge("tools", "chatbot")
-        # self.builder.add_edge("chatbot", "summarize")
-        # self.builder.add_edge("summarize", END)
         self.builder.add_edge("chatbot", END)
 
     def compile(self, checkpointer: BaseCheckpointSaver = None):

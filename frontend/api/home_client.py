@@ -11,3 +11,21 @@ def load_home(token: str | None = None):
     )
     r.raise_for_status()
     return r.json()
+
+# {
+#     "user_status": "registered" / "guest"
+#     "sessions": [
+#         {
+#             "session_id": "uuid",
+#             "title": "...",
+#             "updated_at": "..."
+#         },
+#
+#         {
+#             "session_id": "uuid",
+#             "title": "...",
+#             "updated_at": "..."
+#         },...
+#
+#     ]
+# }

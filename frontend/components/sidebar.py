@@ -1,128 +1,104 @@
 import streamlit as st
 import uuid
-from api.history_client import load_history
-from api.metadata_client import load_metadata
-
+from api.auth_client import render_login
+from api.home_client import load_home
+from modules.switch_session import switch_session 
 
 def render_sidebar():
+    token = st.session_state.get("access_token")
+    user = st.session_state.get("user")
+
     with st.sidebar:
         st.title("📁 Chats")
-
-        # ------------------------------
-        # SAFETY: initialize everything
-        # ------------------------------
-        if "session_id" not in st.session_state:
-            st.session_state.session_id = str(uuid.uuid4())
-
-        if "messages" not in st.session_state:
-            st.session_state.messages = []
-
-        if "pdfs" not in st.session_state:
-            st.session_state.pdfs = []
-
-        if "urls" not in st.session_state:
-            st.session_state.urls = []
-
-        if "status" not in st.session_state:
-            st.session_state.status = None
-
-        # backend sessions (logged in)
-        if "sessions" not in st.session_state:
-            st.session_state.sessions = []
-
-        # frontend-only sessions (guest)
-        if "guest_sessions" not in st.session_state:
-            st.session_state.guest_sessions = []
-
-        if "user_status" not in st.session_state:
-            st.session_state.user_status = "guest"
-
-        # ------------------------------
-        # NEW CHAT (always available)
-        # ------------------------------
+        
         if st.button("➕ New Chat", use_container_width=True):
-            new_id = str(uuid.uuid4())
-
-            # store guest chats locally
-            if st.session_state.user_status != "registered":
-                st.session_state.guest_sessions.append(new_id)
-
-            st.session_state.session_id = new_id
-            st.session_state.messages = []
-            st.session_state.pdfs = []
-            st.session_state.urls = []
-            st.session_state.status = None
-            st.rerun()
+            _handle_new_chat()
 
         st.divider()
 
-        # ------------------------------
-        # HISTORY LIST
-        # ------------------------------
-        if st.session_state.user_status == "registered":
-            sessions = st.session_state.sessions
-        else:
-            sessions = st.session_state.guest_sessions
+        # --- SYNC HISTORY ---
+        if token and not st.session_state.get("history_synced"):
+            _sync_history(token)
+
+        # --- CHAT LIST ---
+        sessions = (
+            st.session_state.get("sessions", []) 
+            if st.session_state.get("user_status") == "registered" 
+            else st.session_state.get("guest_sessions", [])
+        )
 
         if not sessions:
             st.caption("No previous chats")
-            return
+        else:
+            current_active = st.session_state.get("active_session_id")
+            for s in sessions:
+                sid = s.get("session_id") if isinstance(s, dict) else s
+                title = (s.get("title") if isinstance(s, dict) else None) or f"Chat {sid[:8]}"
+                is_active = (sid == current_active)
+                
+                if st.button(f"{'▶️' if is_active else '💬'} {title}", key=f"side_{sid}", use_container_width=True):
+                    switch_session(sid)
 
-        for s in sessions:
-            # registered users → dict
-            if isinstance(s, dict):
-                session_id = s.get("session_id")
-                title = s.get("title", "New Chat")
-            else:
-                # guest users → just session_id
-                session_id = s
-                title = "New Chat"
+        # --- AUTH SECTION (Docks to bottom) ---
+        for _ in range(8): st.write("") 
+        st.divider()
+        
+        if token and user:
+            with st.container(border=True):
+                st.markdown(f"👤 **{user.get('name', 'User')}**")
+                st.caption(user.get('email', ''))
+                if st.button("🚪 Logout", use_container_width=True):
+                    _handle_logout()
+        else:
+            render_login()
 
-            if st.button(
-                title,
-                key=f"chat_{session_id}",
-                use_container_width=True
-            ):
-                _load_session(session_id)
-
-
-def _load_session(session_id: str):
-    st.session_state.session_id = session_id
-
-    # ------------------------------
-    # Load history (safe)
-    # ------------------------------
+def _sync_history(token):
     try:
-        st.session_state.messages = load_history(session_id)
-    except Exception:
-        st.session_state.messages = []
+        from api.home_client import load_home
+        data = load_home(token)
+        st.session_state.sessions = data.get("sessions", [])
+        st.session_state.user_status = "registered"
+        st.session_state.history_synced = True 
+        st.rerun()
+    except Exception as e:
+        st.session_state.history_synced = True 
+        st.sidebar.error("Note: Cloud history unavailable.")
 
-    # ------------------------------
-    # Load metadata (safe)
-    # ------------------------------
-    try:
-        meta = load_metadata(session_id)
-        st.session_state.pdfs = [
-            p for p in meta.get("pdfs_uploaded", [])
-            if isinstance(p, str) and p.strip()
-        ]
-        st.session_state.urls = _dedupe_urls(
-            meta.get("url_links", [])
-        )
-    except Exception:
-        st.session_state.pdfs = []
-        st.session_state.urls = []
-
-    st.session_state.status = None
+def _handle_new_chat():
+    new_id = str(uuid.uuid4())
+    new_chat = {"session_id": new_id, "title": "New Chat ✨"}
+    
+    # # Add to the correct list based on status
+    # if st.session_state.get("user_status") == "registered":
+    #     if "sessions" not in st.session_state: st.session_state.sessions = []
+    #     st.session_state.sessions.insert(0, new_chat)
+    # else:
+    #     if "guest_sessions" not in st.session_state: st.session_state.guest_sessions = []
+    #     st.session_state.guest_sessions.insert(0, new_chat)
+    
+    # Update active state
+    st.session_state.session_id = new_id
+    st.session_state.active_session_id = new_id 
+    st.session_state.messages = []
+    st.session_state.uploaded_pdfs = []
+    st.session_state.urls = []
+    st.session_state.processing = False
     st.rerun()
 
-
-def _dedupe_urls(urls):
-    seen = set()
-    out = []
-    for u in urls:
-        url = u.get("url")
-        if url and url not in seen:
-            seen.add(url)
-            out.append(u)
-    return out
+def _handle_logout():
+    # 1. Clear all user-specific data
+    keys_to_clear = [
+        "access_token", "user", "sessions", "history_synced", 
+        "messages", "active_session_id", "uploaded_pdfs", "urls"
+    ]
+    for key in keys_to_clear:
+        st.session_state.pop(key, None)
+    
+    # 2. Reset to Guest status
+    st.session_state.user_status = "guest"
+    
+    # 3. CRITICAL: Generate a fresh UUID for the new Guest session
+    # This prevents sending an empty or old session_id to the backend
+    st.session_state.session_id = str(uuid.uuid4())
+    
+    st.rerun()

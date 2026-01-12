@@ -26,6 +26,8 @@ async def upload_pdfs(
     if not files or all(f.filename.strip() == "" for f in files):
         raise HTTPException(status_code=400, detail="No files were uploaded.")
     
+    uploaded_filenames = [f.filename for f in files if f.filename.strip() != ""]
+    
     # 1. Security check
     await verify_and_initialize_session(session_id, oauth_id)
     
@@ -42,7 +44,7 @@ async def upload_pdfs(
         
         return JSONResponse(
             status_code=200, 
-            content={"status": result.get("status", "success"), "session_id": session_id}
+            content={"status": result.get("status", "success"), "session_id": session_id, "filenames":uploaded_filenames}
         )
 
     except Exception as e:

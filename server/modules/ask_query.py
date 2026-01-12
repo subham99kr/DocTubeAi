@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from typing import Dict, Any,AsyncGenerator
 from dotenv import load_dotenv
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -140,48 +141,60 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
     }
 
     initial_state = {"messages": [HumanMessage(content=query)], "query": query}
+    
+
+
+async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, None]:
+    query = obj.get("users_query", "")
+    session_id = obj.get("session_id")
+
+    await global_init()
+    http_client = await get_http_client()
+
+    config = {
+        "configurable": {
+            "thread_id": session_id,
+            "tavily_client": _TAVILY_CLIENT,
+            "http_client": http_client,
+            "session_id": session_id,
+        }
+    }
+    initial_state = {"messages": [HumanMessage(content=query)], "query": query}
+
+    # 1. Start the graph in the background (Fire and Forget)
+    # This task will continue running even after this generator yields 'done'
+    task = asyncio.create_task(
+        _COMPILED_GRAPH.ainvoke(initial_state, config)
+    )
 
     try:
+        # 2. Use astream_events just for the UI tokens
         async for event in _COMPILED_GRAPH.astream_events(initial_state, config, version="v2"):
             event_type = event.get("event")
-            # This is the secret to identifying WHERE the token is coming from
             metadata = event.get("metadata", {})
             node_name = metadata.get("langgraph_node")
 
-            # -------------------------
-            # 1. STATUS UPDATES
-            # -------------------------
+            # Handle status updates
             if event_type in ["on_node_start", "on_chain_start"]:
-                mapping = {
-                    "router": "Understanding your question...",
-                    "tools": "Searching for information...",
-                    "chatbot": "Generating response..."
-                }
-                # Check metadata node name first as it is more reliable
+                mapping = {"router": "Thinking...", "tools": "Searching..."}
                 if node_name in mapping:
                     yield {"type": "status", "data": mapping[node_name]}
 
-            elif event_type == "on_tool_start":
-                yield {"type": "status", "data": f"Running tool: {event.get('name')}..."}
+            # Handle tokens
+            elif event_type == "on_chat_model_stream" and node_name == "chatbot":
+                data = event.get("data", {})
+                chunk = data.get("chunk")
+                if chunk and hasattr(chunk, "content") and chunk.content:
+                    yield {"type": "token", "data": chunk.content}
 
-            # -------------------------
-            # 2. TOKEN STREAMING (Scoped to Chatbot Only)
-            # -------------------------
-            elif event_type == "on_chat_model_stream":
-                # FIX: Only yield tokens if they originate from the 'chatbot' node
-                if node_name == "chatbot":
-                    data_payload = event.get("data", {})
-                    chunk = data_payload.get("chunk")
-                    if chunk and hasattr(chunk, "content"):
-                        if token := chunk.content:
-                            yield {"type": "token", "data": token}
-
-            # -------------------------
-            # 3. EARLY TERMINATION (Speed Fix)
-            # -------------------------
-            elif event_type in ["on_node_end", "on_chain_end"]:
-                if node_name == "chatbot":
-                    yield {"type": "done", "data": ""}
+            # 3. IMMEDIATE EXIT
+            # As soon as the chatbot node finishes its work, tell the frontend we are done.
+            if event_type == "on_node_end" and node_name == "chatbot":
+                yield {"type": "done", "data": ""}
+                # We return here. The frontend connection closes.
+                # BUT: the 'task' we created at the top is still running in the background 
+                # to finish the checkpointing.
+                return 
 
     except Exception as e:
         logger.error(f"🔴 Stream Error: {str(e)}", exc_info=True)
