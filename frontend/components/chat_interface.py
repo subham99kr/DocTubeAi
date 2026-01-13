@@ -15,7 +15,7 @@ def render_chat_window():
     # disabled=True instantly dims and locks the bar
     if prompt := st.chat_input(
         "Ask a question about your documents...", 
-        disabled=st.session_state.processing
+        # disabled=st.session_state.processing
     ):
         # STAGE 1: Lock the UI and store the prompt
         st.session_state.processing = True
@@ -52,11 +52,19 @@ def _handle_chat_logic(prompt):
         
         try:
             # Stream the generator
-            for chunk in stream_rag_response(sid, prompt, token):
-                full_response += chunk
+            status_placeholder = st.empty()
+
+            for event in stream_rag_response(sid, prompt, token):
+
+                # STATUS EVENT (Thinking / Searching)
+                if isinstance(event, dict) and event.get("type") == "status":
+                    status_placeholder.markdown(f"✨ *{event['data']}*")
+                    continue
+
+                # TOKEN EVENT
+                status_placeholder.empty()
+                full_response += event
                 response_placeholder.markdown(full_response + "▌")
-            
-            response_placeholder.markdown(full_response)
             
             # Save response to history
             st.session_state.messages.append({"role": "assistant", "content": full_response})

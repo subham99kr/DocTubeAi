@@ -21,6 +21,8 @@ def initialize_session():
     if "active_session_id" not in st.session_state:
         # Track which historical session is currently being viewed
         st.session_state.active_session_id = None 
+    if "title" not in st.session_state:
+        st.session_state.title = "🐣 Welcome !"
 
     # --- DATA LISTS ---
     if "sessions" not in st.session_state:
@@ -44,3 +46,6 @@ def initialize_session():
     if "current_url" not in st.session_state:
         # For clearing the URL text input
         st.session_state.current_url = ""
+
+    if "run_chat_once" not in st.session_state:
+        st.session_state.run_chat_once = False

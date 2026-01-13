@@ -116,31 +116,7 @@ async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 ############################----STREAMING-----##############################################
-async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, None]:
-    """
-    Streams structured graph events + final LLM tokens.
-    Filters out router tokens and signals 'done' early for speed.
-    """
-    query = obj.get("users_query", "")
-    session_id = obj.get("session_id")
 
-    if not query.strip():
-        yield {"type": "error", "data": "Query cannot be empty"}
-        return
-
-    await global_init()
-    http_client = await get_http_client()
-
-    config = {
-        "configurable": {
-            "thread_id": session_id,
-            "tavily_client": _TAVILY_CLIENT,
-            "http_client": http_client,
-            "session_id": session_id,
-        }
-    }
-
-    initial_state = {"messages": [HumanMessage(content=query)], "query": query}
     
 
 
@@ -159,42 +135,35 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
             "session_id": session_id,
         }
     }
-    initial_state = {"messages": [HumanMessage(content=query)], "query": query}
 
-    # 1. Start the graph in the background (Fire and Forget)
-    # This task will continue running even after this generator yields 'done'
-    task = asyncio.create_task(
-        _COMPILED_GRAPH.ainvoke(initial_state, config)
-    )
+    initial_state = {
+        "messages": [HumanMessage(content=query)],
+        "query": query
+    }
 
     try:
-        # 2. Use astream_events just for the UI tokens
-        async for event in _COMPILED_GRAPH.astream_events(initial_state, config, version="v2"):
+        async for event in _COMPILED_GRAPH.astream_events(
+            initial_state,
+            config,
+            version="v2"
+        ):
             event_type = event.get("event")
             metadata = event.get("metadata", {})
             node_name = metadata.get("langgraph_node")
 
-            # Handle status updates
             if event_type in ["on_node_start", "on_chain_start"]:
                 mapping = {"router": "Thinking...", "tools": "Searching..."}
                 if node_name in mapping:
                     yield {"type": "status", "data": mapping[node_name]}
 
-            # Handle tokens
             elif event_type == "on_chat_model_stream" and node_name == "chatbot":
-                data = event.get("data", {})
-                chunk = data.get("chunk")
-                if chunk and hasattr(chunk, "content") and chunk.content:
+                chunk = event.get("data", {}).get("chunk")
+                if chunk and chunk.content:
                     yield {"type": "token", "data": chunk.content}
 
-            # 3. IMMEDIATE EXIT
-            # As soon as the chatbot node finishes its work, tell the frontend we are done.
-            if event_type == "on_node_end" and node_name == "chatbot":
+            elif event_type == "on_node_end" and node_name == "chatbot":
                 yield {"type": "done", "data": ""}
-                # We return here. The frontend connection closes.
-                # BUT: the 'task' we created at the top is still running in the background 
-                # to finish the checkpointing.
-                return 
+                return
 
     except Exception as e:
         logger.error(f"🔴 Stream Error: {str(e)}", exc_info=True)

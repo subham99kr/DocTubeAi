@@ -5,7 +5,7 @@ async def intent_node(state: State, tool_llm_factory, tools):
         tool_llm_factory()
         .bind_tools(tools)
         .with_config({
-            "tool_choice": "auto"   # 🔥 THIS LINE IS CRITICAL
+            "tool_choice": "auto"  
         })
     )
 

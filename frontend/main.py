@@ -13,7 +13,6 @@ check_auth_callback()
 # 2. Initialize the rest of the app
 initialize_session()
 render_sidebar()
-
-st.title("🚀 RAG Knowledge Assistant")
+st.title(st.session_state.get("title"))
 render_status()
 render_chat_window()

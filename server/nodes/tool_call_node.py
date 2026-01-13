@@ -28,7 +28,7 @@ async def tool_call_node(state: State, tool_llm_factory, tools):
                 "Return ONLY a tool call."
             ),
         },
-        last_human,   # ✅ ONLY USER QUERY
+        last_human,   
     ])
 
     if not getattr(response, "tool_calls", None):

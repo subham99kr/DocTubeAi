@@ -9,7 +9,9 @@ from state.state import State
 from nodes.router_node import router_node
 from nodes.tool_call_node import tool_call_node
 from nodes.chatbot import chatbot_node
-# from nodes.summary_node import summary_node
+
+from nodes.prune_states import prune_state_node
+
 
 
 class RAGGraphBuilder:
@@ -48,6 +50,8 @@ class RAGGraphBuilder:
             partial(chatbot_node, llm_runnable_factory=self.chat_llm_factory),
         )
 
+        self.builder.add_node("prune", prune_state_node)
+
         # self.builder.add_node(
         #     "summarize",
         #     partial(summary_node, summary_llm=self.summary_llm),
@@ -67,7 +71,10 @@ class RAGGraphBuilder:
 
         self.builder.add_edge("tool_call", "tools")
         self.builder.add_edge("tools", "chatbot")
-        self.builder.add_edge("chatbot", END)
+        # self.builder.add_edge("chatbot", END)
+        self.builder.add_edge("chatbot", "prune")
+        self.builder.add_edge("prune", END)
+
 
     def compile(self, checkpointer: BaseCheckpointSaver = None):
         self._setup_nodes()
