@@ -5,7 +5,7 @@ from typing import Dict, Any,AsyncGenerator
 from dotenv import load_dotenv
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from nodes.tavily_search_node import internet_search
-from nodes.vector_search_node import docs_or_Youtube_Transcript_or_knowledgeBase_Search
+from nodes.vector_search_node import docs_or_Youtube_video_or_pdf_Search
 from nodes.web_scraper_node import web_scraper_node
 from modules.llm import get_chat_model, get_tool_model
 # from modules.llm import summary_llm
@@ -50,7 +50,7 @@ async def global_init():
             chat_llm_factory=get_chat_model,
             tool_llm_factory=get_tool_model,
             # summary_llm=summary_llm,
-            tools=[docs_or_Youtube_Transcript_or_knowledgeBase_Search, internet_search, web_scraper_node]
+            tools=[docs_or_Youtube_video_or_pdf_Search, internet_search, web_scraper_node]
         )
         _COMPILED_GRAPH = builder.compile(checkpointer=_CHECKPOINTER)
         logger.info("✅ LangGraph Compiled")
@@ -83,6 +83,10 @@ async def ask_with_graph(obj: Dict[str, Any]) -> Dict[str, Any]:
         initial_state = {
             "messages": [HumanMessage(content=query)],
             "query": query,
+
+            # new things
+            "route": "chat",
+            "tool_steps": 0, 
         }
 
         # 5. Graph Invocation (Most likely place for errors)
@@ -152,7 +156,12 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
             node_name = metadata.get("langgraph_node")
 
             if event_type in ["on_node_start", "on_chain_start"]:
-                mapping = {"router": "Thinking...", "tools": "Searching..."}
+                mapping = {
+                    "router": "Thinking...",
+                    "tool_call": "Planning tools...",
+                    "tools": "Searching...",
+                    # "chatbot": "Wrapping things..."
+                }
                 if node_name in mapping:
                     yield {"type": "status", "data": mapping[node_name]}
 
@@ -161,7 +170,7 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
                 if chunk and chunk.content:
                     yield {"type": "token", "data": chunk.content}
 
-            elif event_type == "on_node_end" and node_name == "chatbot":
+            elif event_type == "on_node_end" and node_name == "prune":
                 yield {"type": "done", "data": ""}
                 return
 

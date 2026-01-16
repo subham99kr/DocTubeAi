@@ -106,7 +106,7 @@ async def load_transcript(
 
     # 4) Send chunks to MongoDB (IO bound)
     logger.info("🔰 Calling insert_chunks function for transcript chunks")
-    await run_in_threadpool(insert_chunks, chunks)
+    await insert_chunks(chunks)
     logger.info("🟢 insert_chunks function completed for transcript chunks")
 
     await append_link_to_db(session_id, youtube_url, title)

@@ -10,9 +10,6 @@ from langchain_core.runnables import RunnableConfig
 async def web_scraper_node(url:str,config:RunnableConfig) -> SkipValidation[str]:
     """
     This is a web scraper it get the text from a website if provided the url.
-    Search general websites (blogs, news, wikis).
-    input: url:str, skip any other parameter
-    output: scraped text of the url
     """
     try:
         http_client = config.get("configurable", {}).get("http_client")

@@ -52,17 +52,15 @@ class RAGGraphBuilder:
 
         self.builder.add_node("prune", prune_state_node)
 
-        # self.builder.add_node(
-        #     "summarize",
-        #     partial(summary_node, summary_llm=self.summary_llm),
-        # )
+        
 
     def _setup_edges(self):
         self.builder.add_edge(START, "router")
 
         self.builder.add_conditional_edges(
             "router",
-            lambda s: s["route"],
+            # lambda s: s["route"],
+            lambda s: s.get("route", "chat"),
             {
                 "tools": "tool_call",
                 "chat": "chatbot",
@@ -72,7 +70,14 @@ class RAGGraphBuilder:
         self.builder.add_edge("tool_call", "tools")
         self.builder.add_edge("tools", "chatbot")
         # self.builder.add_edge("chatbot", END)
-        self.builder.add_edge("chatbot", "prune")
+        self.builder.add_conditional_edges(
+            "chatbot",
+            lambda s: s.get("route", "end"),
+            {
+                "tools": "tool_call",   # follow-up tool usage
+                "end": "prune",         # finish
+            },
+        )
         self.builder.add_edge("prune", END)
 
 

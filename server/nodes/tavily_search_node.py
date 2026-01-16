@@ -13,8 +13,12 @@ async def internet_search(
     to_search: str, 
     config: RunnableConfig
 ) -> str:
-    """Search the internet for news or general knowledge.
-    Input: to_search:str ,skip anyother parameter
+    """
+    USE THIS ONLY AS A LAST RESORT. 
+    If the user asks about specific files, transcripts, or uploaded content, 
+    you MUST use 'docs_or_Youtube_video_or_pdf_Search' first.
+    Only use this if the local search returns 'No relevant information found' 
+    or if the question is about current world events (e.g., today's news).
     """
     # logger.info(f"🚀 internet_search tools triggered with query: {to_search}")
     

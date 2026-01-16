@@ -20,9 +20,11 @@ def initialize_session():
         st.session_state.session_id = str(uuid.uuid4())
     if "active_session_id" not in st.session_state:
         # Track which historical session is currently being viewed
-        st.session_state.active_session_id = None 
+        st.session_state.active_session_id = st.session_state.session_id 
     if "title" not in st.session_state:
         st.session_state.title = "🐣 Welcome !"
+    if "uploader_key" not in st.session_state:
+        st.session_state.uploader_key = 0
 
     # --- DATA LISTS ---
     if "sessions" not in st.session_state:

@@ -16,7 +16,6 @@ router = APIRouter(
     tags=["Transcripts"]
 )
 
-# --- Pydantic Models ---
 class TranscriptRequest(BaseModel):
     url: str
     session_id: str

@@ -9,13 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 @tool
-async def docs_or_Youtube_Transcript_or_knowledgeBase_Search(query:str,config:RunnableConfig) -> str:
+async def docs_or_Youtube_video_or_pdf_Search(query:str,config:RunnableConfig) -> str:
     """
-    You are a Retrieval-Augmented Generation (RAG) assistant.
-    This tool gets users Pdf or docs chunks though vector search.
-    input: query:str (the users query text related to docs/transcript )
-    output: str
-    note: Never pass any other param other than query not even (config,session_id,collection,embeddings etc.)
+    PRIMARY SEARCH TOOL. Use this FIRST for any questions about the user's 
+    uploaded PDFs, documents, YouTube transcripts, youtube title . 
+    This contains the private, specific knowledge the user is asking about.
     """
     
     

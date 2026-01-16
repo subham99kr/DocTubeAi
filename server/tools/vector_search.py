@@ -9,8 +9,8 @@ async def run_vector_search(query: str, session_id: str) -> str:
     try:
         # 1. Generate Embedding
         query_vector = await embeddings_model.aembed_query(query)
-        min_score = 0.6
-        num_chunks= 3
+        min_score = 0.4
+        num_chunks= 6
 
         pipeline = [
             {
