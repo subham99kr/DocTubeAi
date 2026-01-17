@@ -3,7 +3,7 @@ import shutil
 import aiofiles
 import aiofiles.os  # i don't need this right now.. may require it later 
 from fastapi.concurrency import run_in_threadpool
-from fastapi import UploadFile
+from fastapi import UploadFile,HTTPException
 from pathlib import Path
 from typing import List
 import logging
@@ -78,19 +78,33 @@ async def save_uploaded_files(files: List[UploadFile], session_id: str) -> List[
 
     for upload in files:
         # ensure pointer is at start
-        await upload.seek(0)
+        # await upload.seek(0)
+        if not upload.filename:
+            continue
         
 
         safe_path = await unique_filepath(BASE_UPLOAD_DIR, upload.filename, session_id=session_id)
 
-        async with aiofiles.open(safe_path, "wb") as out_f:
-            while content := await upload.read(1024 * 1024):  # Read in chunks of 1 MB
-                await out_f.write(content)
+        contents = await upload.read()
+        if not contents:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Empty file received: {upload.filename}"
+            )
 
-        await upload.seek(0)
+        async with aiofiles.open(safe_path, "wb") as out_f: # Read in chunks of 1 MB
+            await out_f.write(contents)
+        
+
+        # await upload.seek(0)
 
         saved_path.append(safe_path)
         filenames_to_db.append(upload.filename)
+        logger.info(
+            "🟢Saved upload to %s (%d bytes)",
+            safe_path,
+            len(contents)
+        )
 
         # close underlying file
         try:
