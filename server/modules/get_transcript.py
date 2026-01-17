@@ -1,5 +1,5 @@
-from deep_translator import GoogleTranslator
-from langdetect import detect
+# from deep_translator import GoogleTranslator
+# from langdetect import detect
 from urllib.parse import urlparse, parse_qs
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled, VideoUnavailable
 from fastapi import HTTPException
