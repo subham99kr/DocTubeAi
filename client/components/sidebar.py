@@ -47,8 +47,7 @@ def render_sidebar():
                     ):
                         switch_session(sid)
 
-        # --- AUTH SECTION (Docks to bottom) ---
-        # This divider stays below the scrollable container
+        # --- AUTH SECTION  ---
         st.divider()
         
         if token and user:
@@ -76,8 +75,6 @@ def _handle_new_chat():
     """Sets up a fresh session without adding it to the list yet."""
     new_id = str(uuid.uuid4())
     
-    # We update the session IDs but DON'T push to the 'sessions' list
-    # The promotion logic in render_chat_window will handle that after 1st message
     st.session_state.session_id = new_id
     st.session_state.active_session_id = new_id 
     st.session_state.messages = []
@@ -91,7 +88,7 @@ def _handle_logout():
     keys_to_clear = [
         "access_token", "user", "sessions", "history_synced", 
         "messages", "active_session_id", "uploaded_pdfs", "urls",
-        "guest_sessions" # Clear guest chats on logout too if desired
+        "guest_sessions" # Clear guest chats on logout for now
     ]
     for key in keys_to_clear:
         st.session_state.pop(key, None)

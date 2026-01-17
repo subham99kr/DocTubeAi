@@ -1,4 +1,3 @@
-import os
 import shutil
 import aiofiles
 import aiofiles.os  # i don't need this right now.. may require it later 

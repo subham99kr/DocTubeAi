@@ -2,8 +2,7 @@
 
 from tools.vector_search import run_vector_search
 from langchain_core.runnables import RunnableConfig
-from typing import Annotated
-from langchain_core.tools import tool,InjectedToolArg
+from langchain_core.tools import tool
 import logging
 logger = logging.getLogger(__name__)
 

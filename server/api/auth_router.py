@@ -1,6 +1,5 @@
 import os
-import httpx
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from global_modules.pg_pool import get_pg_pool
 from auth.security import create_secure_jwt

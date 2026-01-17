@@ -6,7 +6,7 @@ def render_context(on_pdf_upload, on_link_submit):
 
     st.markdown("### 📎 Session Context")
 
-    # --- 1. UPLOAD SECTION (Disabled when is_busy) ---
+    # --- 1. UPLOAD SECTION  ---
     with st.container(border=True):
         st.markdown("##### ➕ Add Context")
         

@@ -41,24 +41,3 @@ async def run_tavily_search(client, query: str, max_results: int = 3) -> str:
     except Exception as e:
         logger.error(f"❌ Tavily API logic failed: {str(e)}", exc_info=True)
         return "Error: Unable to fetch search results at this time."
-
-# import logging
-
-# logger = logging.getLogger(__name__)
-
-# async def run_tavily_search(client, query: str, max_results: int = 3) -> str:
-#     """Renamed to avoid collision with the tool name"""
-#     try:
-#         response = await client.search(
-#             query=query,
-#             search_depth="basic",
-#             max_results=max_results,
-#         )
-#         results = response.get("results", [])
-#         content_list = [r["content"] for r in results if r.get("content")]
-#         return " ".join(content_list)[:6000]
-
-#     except Exception as e:
-#         # This will print the FULL stack trace to your terminal
-#         logger.error(f"❌ Tavily API logic failed: {str(e)}", exc_info=True)
-#         return ""

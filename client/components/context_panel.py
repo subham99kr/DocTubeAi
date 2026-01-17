@@ -75,7 +75,7 @@ def render_top_bar():
                 st.toast("⚠️ Enter a URL first")
 
 
-        # --- CONTEXT DROPDOWN (POPOVER) ---
+        # --- CONTEXT DROPDOWN ---
         with st.popover("📎 Context", use_container_width=True):
             st.markdown("### 📎 Session Context")
             
@@ -97,7 +97,7 @@ def render_top_bar():
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # # ---- SIDE EFFECT (OUTSIDE RENDER) ----
+    # # ---- debugging ----
     # if st.session_state.uploaded_once and not st.session_state.processing:
     #     handle_pdf_upload(st.session_state.files_to_upload)
     #     st.session_state.uploaded_once = False

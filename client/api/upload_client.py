@@ -54,14 +54,14 @@ def load_transcript_api(youtube_url, session_id, token=None):
     url = f"{BACKEND_URL}/transcripts/load"
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     
-    # Matches Pydantic model: TranscriptRequest
+    # URL and Session_id should be in form data
     payload = {
         "url": youtube_url,
         "session_id": session_id
     }
 
     try:
-        # json= automatically sets 'application/json'
+        # get the backend response
         response = requests.post(url, headers=headers, json=payload)
         
         if response.status_code == 422:

@@ -85,7 +85,7 @@ def check_auth_callback():
                         headers={"Authorization": f"Bearer {auth_data['access_token']}"}
                     )
             
-            # 4. Cleanup
+            # 4. Clean up
             st.query_params.clear()
             st.toast(f"Welcome back, {auth_data['user']['name']}!")
             st.rerun()

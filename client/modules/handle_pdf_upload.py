@@ -21,7 +21,7 @@ def handle_pdf_upload(files):
 
         if backend_files:
             st.toast(f"✅ Added {len(backend_files)} PDF(s)")
-            st.session_state.uploader_key += 1  # reset uploader safely
+            st.session_state.uploader_key += 1  # this resets the widget of the streamlit file uploader
     
     st.session_state.processing = False
     st.rerun()

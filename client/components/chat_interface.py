@@ -1,7 +1,7 @@
 import streamlit as st
 
 def render_chat_window():
-    """Renders the message history bubbles only."""
+    """Renders the message history container."""
     chat_container = st.container(height=490)
 
     with chat_container:

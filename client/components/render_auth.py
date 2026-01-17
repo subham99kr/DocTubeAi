@@ -24,6 +24,6 @@ def check_auth_callback():
             st.rerun()
 
         except Exception as e:
-            # If it fails, clear the URL anyway to stop the infinite 400 error loop
+            # If it fails, clear the URL anyway to stop the infinite 400 error
             st.query_params.clear()
             st.error(f"Authentication failed or code expired. Please log in again.")

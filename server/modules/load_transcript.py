@@ -1,10 +1,8 @@
-import os
-import asyncio
+
 import logging
 from typing import Optional
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
-from fastapi.concurrency import run_in_threadpool
 from global_modules.pg_pool import get_pg_pool
 
 from modules.get_transcript import transcrpition_extractor, get_video_title

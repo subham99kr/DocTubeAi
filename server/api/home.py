@@ -1,7 +1,6 @@
-import uuid
 import logging
 from fastapi import APIRouter, Depends
-from typing import List, Dict, Optional
+from typing import List, Optional
 from pydantic import BaseModel
 from global_modules.pg_pool import get_pg_pool
 from auth.dependencies import get_current_user_optional

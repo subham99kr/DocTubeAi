@@ -1,6 +1,5 @@
 
 
-from pydantic import SkipValidation
 from langchain_core.tools import tool
 from tools.tavily_search import run_tavily_search 
 from langchain_core.runnables import RunnableConfig

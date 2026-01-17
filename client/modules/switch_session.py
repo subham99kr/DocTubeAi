@@ -9,14 +9,10 @@ def switch_session(new_session_id):
     data = load_history(new_session_id, token) 
 
     if data:
-        # LOGGING: Helps you see if 'history' is actually there
-        # st.write(f"DEBUG: Found {len(data.get('history', []))} messages")
 
         st.session_state.session_id = data.get("session_id")
         st.session_state.active_session_id = data.get("session_id")
 
-        # Crucial: Use the exact key the backend sends
-        # If your API uses "messages", change "history" to "messages" here
         st.session_state.messages = data.get("history", [])
         
         st.session_state.uploaded_pdfs = data.get("pdfs", [])
