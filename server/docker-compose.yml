@@ -1,12 +1,16 @@
-
 services:
   server:
+    build: .
     image: doctubeai-server:latest
     container_name: doctubeai-server
+
     ports:
       - "8000:8000"
+
     env_file:
       - .env
+
     volumes:
       - ./uploaded_pdfs:/app/uploaded_pdfs
+
     restart: unless-stopped

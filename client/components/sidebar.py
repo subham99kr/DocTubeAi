@@ -14,7 +14,7 @@ def render_sidebar():
         # --- NEW CHAT BUTTON ---
         if st.button("➕ New Chat", use_container_width=True):
             _handle_new_chat()
-            st.session_state.title = "new chat"
+            st.session_state.title = "New Chat"
 
         st.divider()
 
@@ -41,7 +41,7 @@ def render_sidebar():
                         st.session_state.title = title
                     
                     if st.button(
-                        f"{'🟢🟢' if is_active else ''} {title} {'🟢🟢' if is_active else ''}", 
+                        f"{'🟩' if is_active else ''} {title[:12]} ", 
                         key=f"side_{sid}", 
                         use_container_width=True
                     ):

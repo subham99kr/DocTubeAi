@@ -44,3 +44,20 @@ pydantic
 #additional
 pymongo
 beautifulsoup4
+tavily-python
+pypdf
+
+# sentence-transformers does the below thing.. just wrote it for safety
+# sentence-transformers
+# torch
+# transformers
+# scikit-learn
+# scipy
+# numpy
+
+#####
+motor
+pymongo
+python-multipart
+
+

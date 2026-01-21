@@ -4,7 +4,6 @@ from state.state import State
 async def tool_call_node(state: State, tool_llm_factory, tools):
     """
     Tool-only node.
-    Groq-safe.
     """
 
     # 🔑 Extract ONLY the last human message
@@ -12,6 +11,12 @@ async def tool_call_node(state: State, tool_llm_factory, tools):
         m for m in reversed(state["messages"])
         if isinstance(m, HumanMessage)
     )
+    # Initialize / increment tool loop counter
+    state["tool_steps"] = state.get("tool_steps", 0) + 1
+    if state["tool_steps"] > 3:
+        # Hard stop: no more tools
+        state["route"] = "end"
+        return state
 
     llm = (
         tool_llm_factory()
@@ -36,4 +41,10 @@ async def tool_call_node(state: State, tool_llm_factory, tools):
             "ToolCallNode failed: model did not emit tool_calls"
         )
 
-    return {"messages": [response]}
+    # Append, do NOT overwrite state
+    state["messages"].append(response)
+
+    # Tell graph to execute tools
+    state["route"] = "tools"
+
+    return state

@@ -12,7 +12,7 @@ async def router_node(state: State, llm_factory):
 
     llm = llm_factory()
 
-    last_human = state["messages"][-1].content
+    recent_messages = state["messages"][-3:]
 
     try:
         response = await llm.ainvoke([
@@ -26,20 +26,19 @@ async def router_node(state: State, llm_factory):
                     "- If the user is asking to elaborate, clarify, continue, or explain MORE about an existing answer, "
                     "that does NOT require external information.\n\n"
                     "Rules:\n"
-                    "1. If the user asks to explain, elaborate, summarize, review, debug, refactor, or continue → chat\n"
-                    "2. If the user asks for more details, clarification, or follow-up → tool\n"
-                    "3. If the user explicitly asks to search, find, look up, retrieve, or read from documents/PDFs → tools\n"
-                    "4. If the user asks for latest news, current data, or information not already available → tools\n"
-                    "5. When in doubt → chat\n\n"
+                    "1. If the user asks to explain, elaborate, review, debug, refactor, or continue -> chat\n"
+                    "2. If the user asks for more details, clarification, or follow-up -> tools\n"
+                    "3. If the user explicitly asks to search, find, look up, retrieve, or read from documents/PDFs -> tools\n"
+                    "4. If the user asks from a url or asks for latest news, current data, or information not already available -> tools\n"
+                    "5. When in doubt -> chat\n"
+                    "6. When asked to summarize a pdf or video -> tools\n"
+                    "7. When just asked to summarize -> chat\n\n"
                     "Respond with ONLY ONE WORD:\n"
                     "- chat\n"
                     "- tools\n"
                 ),
             },
-            {
-                "role": "user",
-                "content": last_human,
-            },
+            *recent_messages,
         ])
 
         decision = response.content.strip().lower()

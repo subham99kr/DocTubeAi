@@ -1,6 +1,7 @@
 import streamlit as st
 import httpx
 from utils.config import BACKEND_URL
+# from modules.persist_token import store_token
 
 
 def render_login():
@@ -41,7 +42,7 @@ def render_login():
         </style>
         <a href="{login_url}" target="_top" class="login-btn">
             <img class="google-icon" src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google logo">
-            Sign in with Google
+            Sign in
         </a>
     """
     st.sidebar.markdown(login_button_html, unsafe_allow_html=True)
@@ -66,6 +67,7 @@ def check_auth_callback():
 
                 # 2. Update Session State
                 st.session_state.access_token = auth_data["access_token"]
+                # store_token(auth_data["access_token"])
                 st.session_state.user = auth_data["user"]
                 st.session_state.user_status = "registered"
                 st.session_state.history_synced = False

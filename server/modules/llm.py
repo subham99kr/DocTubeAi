@@ -7,7 +7,6 @@ load_dotenv()
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 MAIN_LLM_MODEL = os.environ.get("MAIN_LLM_MODEL")
-SUMMARY_LLM_MODEL = os.environ.get("SUMMARY_LLM_MODEL")
 
 
 def get_chat_model():

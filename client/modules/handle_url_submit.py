@@ -16,4 +16,3 @@ def handle_url_submit(url):
         st.toast(f"🔗 Added: {new_link_data.get('title', 'New Link')}")
         
     st.session_state.processing = False
-    st.rerun()

@@ -15,26 +15,7 @@ async def chatbot_node(state: State, llm_runnable_factory):
         "messages": state.get("messages", [])[-5:],
     })
 
-    # -------------------------
-    # State mutation (CRITICAL)
-    # -------------------------
-
-    # 1. Append assistant message
     state["messages"].append(response)
-
-    # 2. Initialize counter defensively
-    state["tool_steps"] = state.get("tool_steps", 0) + 1
-
-    # 3. Loop guard
-    if state["tool_steps"] > 3:
-        logger.warning("Tool loop limit reached, forcing termination")
-        state["route"] = "end"
-
-    # 4. Decide next step
-    elif getattr(response, "tool_calls", None):
-        state["route"] = "tools"
-
-    else:
-        state["route"] = "end"
+    state["route"] = "end"
 
     return state

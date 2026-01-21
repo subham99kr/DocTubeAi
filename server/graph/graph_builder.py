@@ -19,12 +19,10 @@ class RAGGraphBuilder:
         self,
         chat_llm_factory: Any,
         tool_llm_factory: Any,
-        # summary_llm: Any,
         tools: List[Any],
     ):
         self.chat_llm_factory = chat_llm_factory
         self.tool_llm_factory = tool_llm_factory
-        # self.summary_llm = summary_llm
         self.tools = tools
         self.builder = StateGraph(State)
 
@@ -68,14 +66,14 @@ class RAGGraphBuilder:
         )
 
         self.builder.add_edge("tool_call", "tools")
-        self.builder.add_edge("tools", "chatbot")
+        self.builder.add_edge("chatbot", "prune")
         # self.builder.add_edge("chatbot", END)
         self.builder.add_conditional_edges(
-            "chatbot",
+            "tools",
             lambda s: s.get("route", "end"),
             {
-                "tools": "tool_call",   # follow-up tool usage
-                "end": "prune",         # finish
+                "tools": "tool_call",
+                "end": "chatbot",         # finish
             },
         )
         self.builder.add_edge("prune", END)

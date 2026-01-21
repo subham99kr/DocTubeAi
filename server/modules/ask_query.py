@@ -164,7 +164,7 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
                 if node_name in mapping:
                     yield {"type": "status", "data": mapping[node_name]}
 
-            elif event_type == "on_chat_model_stream" and node_name == "chatbot":
+            elif event_type == "on_chat_model_stream" and (node_name == "chatbot" ):
                 chunk = event.get("data", {}).get("chunk")
                 if chunk and chunk.content:
                     yield {"type": "token", "data": chunk.content}
@@ -172,6 +172,9 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
             elif event_type == "on_node_end" and node_name == "prune":
                 yield {"type": "done", "data": ""}
                 return
+            # elif event_type == "on_node_end" and node_name == "chatbot":
+            #     yield {"type": "done", "data": ""}
+            #     return
 
     except Exception as e:
         logger.error(f"🔴 Stream Error: {str(e)}", exc_info=True)

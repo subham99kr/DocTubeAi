@@ -19,7 +19,8 @@ async def login_google():
         f"https://accounts.google.com/o/oauth2/auth?"
         f"response_type=code&client_id={GOOGLE_CLIENT_ID}&"
         f"redirect_uri={GOOGLE_REDIRECT_URI}&"
-        f"scope=openid%20profile%20email&access_type=offline"
+        f"scope=openid%20profile%20email&"
+        f"access_type=offline&prompt=consent"
     )
     return RedirectResponse(url=url)
 
@@ -38,6 +39,7 @@ async def auth_callback(code: str):
                 "redirect_uri": GOOGLE_REDIRECT_URI,
                 "grant_type": "authorization_code",
             },
+            timeout=10
         )
         token_res.raise_for_status()
         google_tokens = token_res.json()
@@ -45,7 +47,8 @@ async def auth_callback(code: str):
         # 2. Use access token to get user's profile info
         user_info_res = await client.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
-            headers={"Authorization": f"Bearer {google_tokens['access_token']}"}
+            headers={"Authorization": f"Bearer {google_tokens['access_token']}"},
+            timeout=10
         )
         user_info_res.raise_for_status()
         user_data = user_info_res.json()
