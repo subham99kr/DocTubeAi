@@ -16,7 +16,9 @@ async def web_scraper_node(url:str,config:RunnableConfig) -> SkipValidation[str]
         logger.info(f"calling logic for {url}")
         content = await run_web_scrape(url,http_client)
         # logger.info(f"content retrived {content}")
-        return str(content)
+        return f"[WEB_SCRAPE]\n{content}"
+
     except Exception as e:
         logger.error(f"Scraper failed for {url}: {str(e)}")
-        return f"Error: Could not retrieve content from {url}."
+        return f"[WEB_SCRAPE]\nError: Could not retrieve content from {url}."
+

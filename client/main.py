@@ -20,7 +20,7 @@ initialize_session()
 
 render_sidebar()
 
-col1, col2 = st.columns([3, 1], gap="medium")
+col1, col2 = st.columns([5, 1], gap="small")
 
 with col1:
     st.title(st.session_state.get("title", "New Chat"))

@@ -25,7 +25,8 @@ async def docs_or_Youtube_video_or_pdf_Search(query:str,config:RunnableConfig) -
     logger.info(f"Calling vector logic for session id: {session_id}")
     context = await run_vector_search(query,session_id)
     if not context:
-            return "No relevant information found from the uploaded pdf(s)/youtube link(s)."
+        return "[VECTOR_DB]\nNo relevant information found from the uploaded pdf(s)/youtube link(s)."
+
 
     # return {"vector_context": context}
-    return context
+    return f"[VECTOR_DB]\n{context}"

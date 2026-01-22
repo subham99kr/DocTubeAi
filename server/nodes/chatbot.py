@@ -12,7 +12,7 @@ async def chatbot_node(state: State, llm_runnable_factory):
     chain = prompt | llm
 
     response = await chain.ainvoke({
-        "messages": state.get("messages", [])[-5:],
+        "messages": state.get("messages", [])[-10:],
     })
 
     state["messages"].append(response)

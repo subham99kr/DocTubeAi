@@ -1,5 +1,3 @@
-
-
 from langchain_core.tools import tool
 from tools.tavily_search import run_tavily_search 
 from langchain_core.runnables import RunnableConfig
@@ -28,7 +26,7 @@ async def internet_search(
         # Call the renamed logic function
         logger.info("starting the tavily logic")
         context = await run_tavily_search(client, to_search)
-        return context or "No results found."
+        return f"[INTERNET_SEARCH]\n{context}" if context else "[INTERNET_SEARCH]\nNo results found."
     except Exception as e:
         logger.error(f"❌ Tool execution crashed: {str(e)}", exc_info=True)
         return "An internal error occurred during search."
