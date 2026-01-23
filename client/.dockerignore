@@ -1,0 +1,35 @@
+# secrets
+.env
+*.env
+
+# python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+
+# git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# docker files (optional)
+docker-compose.yml
+
+# streamlit cache
+.streamlit/
+
+# test & cache
+.pytest_cache/
+.cache/

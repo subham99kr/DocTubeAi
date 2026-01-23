@@ -2,3 +2,4 @@ streamlit
 httpx
 requests
 streamlit-cookies-controller
+python-dotenv
