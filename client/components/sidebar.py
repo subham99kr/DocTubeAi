@@ -3,22 +3,36 @@ import uuid
 from api.auth_client import render_login
 from api.home_client import load_home
 from modules.switch_session import switch_session 
+from modules.cookie_helper import clear_auth_cookies
 
 def render_sidebar():
     token = st.session_state.get("access_token")
     user = st.session_state.get("user")
+    
 
     with st.sidebar:
+
+        # Auth section
+    
+        if token and user:
+            with st.container(border=True):
+                st.markdown(f"👤 **{user.get('name', 'User')}**")
+                # st.caption(user.get('email', ''))
+                if st.button("🚪 Logout", use_container_width=True):
+                    _handle_logout()
+        else:
+            render_login()
+
         st.title("📁 Chats")
         
-        # --- NEW CHAT BUTTON ---
+        # NEW CHAT BUTTON
         if st.button("➕ New Chat", use_container_width=True):
             _handle_new_chat()
             st.session_state.title = "New Chat"
 
         st.divider()
 
-        # --- SYNC HISTORY ---
+        # SYNC THE PAST CHAT GROUPS
         if token and not st.session_state.get("history_synced"):
             _sync_history(token)
 
@@ -28,36 +42,28 @@ def render_sidebar():
             else st.session_state.get("guest_sessions", [])
         )
 
+        # LOAD THE SESSIONS AS BUTTON SO THAT THEY CAN BE CLICKED
         if not sessions:
             st.caption("No previous chats")
         else:
-            with st.container(height=250, border=False):
-                current_active = st.session_state.get("active_session_id")
-                for s in sessions:
-                    sid = s.get("session_id") if isinstance(s, dict) else s
-                    title = (s.get("title") if isinstance(s, dict) else None) or f"Chat {sid[:8]}"
-                    is_active = (sid == current_active)
-                    if is_active:
-                        st.session_state.title = title
-                    
-                    if st.button(
-                        f"{'🟩' if is_active else ''} {title[:12]} ", 
-                        key=f"side_{sid}", 
-                        use_container_width=True
-                    ):
-                        switch_session(sid)
+            current_active = st.session_state.get("active_session_id")
+            for s in sessions:
+                sid = s.get("session_id") if isinstance(s, dict) else s
+                title = (s.get("title") if isinstance(s, dict) else None) or f"Chat {sid[:8]}"
+                is_active = (sid == current_active)
+                if is_active:
+                    st.session_state.title = title
+                
+                if st.button(
+                    f"{'🟩' if is_active else ''} {title[:12]} ", 
+                    key=f"side_{sid}", 
+                    use_container_width=True,
+                ):
+                    switch_session(sid)
 
-        # --- AUTH SECTION  ---
-        st.divider()
         
-        if token and user:
-            with st.container(border=True):
-                st.markdown(f"👤 **{user.get('name', 'User')}**")
-                st.caption(user.get('email', ''))
-                if st.button("🚪 Logout", use_container_width=True):
-                    _handle_logout()
-        else:
-            render_login()
+
+# BELOW ARE SOME HELPER FUNCTIONS
 
 def _sync_history(token):
     """Fetch history from backend for registered users."""
@@ -85,6 +91,7 @@ def _handle_new_chat():
 
 def _handle_logout():
     """Wipes session and generates a fresh guest ID."""
+    clear_auth_cookies()
     keys_to_clear = [
         "access_token", "user", "sessions", "history_synced", 
         "messages", "active_session_id", "uploaded_pdfs", "urls",

@@ -1,7 +1,7 @@
 import streamlit as st
 import httpx
 from utils.config import BACKEND_URL
-# from modules.persist_token import store_token
+from modules.cookie_helper import set_cookie_with_ttl
 
 
 def render_login():
@@ -28,12 +28,6 @@ def render_login():
                 border: 1px solid #dadce0;
                 transition: background-color 0.2s, box-shadow 0.2s;
                 box-sizing: border-box;
-                box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-            }}
-            .login-btn:hover {{
-                background-color: #f8f9fa;
-                box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);
-                border-color: #d2d4d7;
             }}
             .google-icon {{
                 width: 18px;
@@ -67,25 +61,29 @@ def check_auth_callback():
 
                 # 2. Update Session State
                 st.session_state.access_token = auth_data["access_token"]
-                # store_token(auth_data["access_token"])
                 st.session_state.user = auth_data["user"]
                 st.session_state.user_status = "registered"
                 st.session_state.history_synced = False
 
-                # 3. Claim Guest Sessions
-                guest_sessions = st.session_state.get("guest_sessions", [])
-                session_ids_to_claim = [s["session_id"] for s in guest_sessions]
-                
-                current_sid = st.session_state.get("session_id")
-                if current_sid and current_sid not in session_ids_to_claim:
-                    session_ids_to_claim.append(current_sid)
+                ##################### save the cookies ####################
+                set_cookie_with_ttl("access_token", auth_data["access_token"])
+                set_cookie_with_ttl("user", auth_data["user"])
 
-                if session_ids_to_claim:
-                    client.post(
-                        f"{BACKEND_URL}/auth/claim_sessions",
-                        json={"session_ids": session_ids_to_claim},
-                        headers={"Authorization": f"Bearer {auth_data['access_token']}"}
-                    )
+
+                # # 3. Claim Guest Sessions
+                # guest_sessions = st.session_state.get("guest_sessions", [])
+                # session_ids_to_claim = [s["session_id"] for s in guest_sessions]
+                
+                # current_sid = st.session_state.get("session_id")
+                # if current_sid and current_sid not in session_ids_to_claim:
+                #     session_ids_to_claim.append(current_sid)
+
+                # if session_ids_to_claim:
+                #     client.post(
+                #         f"{BACKEND_URL}/auth/claim_sessions",
+                #         json={"session_ids": session_ids_to_claim},
+                #         headers={"Authorization": f"Bearer {auth_data['access_token']}"}
+                #     )
             
             # 4. Clean up
             st.query_params.clear()

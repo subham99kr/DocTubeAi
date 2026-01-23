@@ -3,7 +3,7 @@ import io
 import re
 import logging
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Iterable
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader

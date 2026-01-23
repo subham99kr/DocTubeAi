@@ -20,24 +20,22 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# --------------------
-# Install ML deps FIRST (critical)
-# --------------------
-RUN pip install --no-cache-dir \
-    torch --index-url https://download.pytorch.org/whl/cpu
-
-RUN pip install --no-cache-dir \
-    sentence-transformers \
-    transformers \
-    scikit-learn \
-    scipy \
-    numpy
 
 # --------------------
 # Install remaining Python deps
 # --------------------
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir \
+        torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir \
+        sentence-transformers \
+        transformers \
+        scikit-learn \
+        scipy \
+        numpy && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get purge -y build-essential && \
+    apt-get autoremove -y
 
 # --------------------
 # Copy application code
@@ -53,4 +51,3 @@ EXPOSE 8000
 # Run server
 # --------------------
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-
