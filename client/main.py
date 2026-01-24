@@ -25,32 +25,39 @@ title = st.session_state.get("title", "New Chat")
 
 st.markdown(f"""
 <style>
-
+/* 1. Do NOT use display: none. Instead, make the background transparent. */
 header[data-testid="stHeader"] {{
-    display: none;
+    background-color: rgba(0,0,0,0) ;
+    border: none ;
+    z-index: 100000 ; 
+}}
+
+/* 2. Style the toggle button so it's visible on your dark background */
+header[data-testid="stHeader"] button {{
+    color: white ;
+    margin-left: 10px ;
 }}
 
 div.block-container {{
-    padding-top: 70px !important;
+    padding-top: 70px ;
 }}
 
 .app-header {{
     position: fixed;
     top: 0;
-    height: 8%;
+    height: 60px; 
     width: 100%;
     background: #0e1117;
     color: white;
     display: flex;
     align-items: center;
-    padding: 0 20px;
+    padding: 0 60px; 
     font-size: 20px;
     font-weight: 600;
     border-bottom: 1px solid #2c2f33;
     z-index: 99999;
-    transition: all 0.2s ease;
+    transition: left 0.2s ease;
 }}
-
 </style>
 
 <div id="app-header" class="app-header">
@@ -62,22 +69,28 @@ function updateHeader() {{
     const sidebar = document.querySelector('[data-testid="stSidebar"]');
     const header = document.getElementById("app-header");
 
-    if (!sidebar || !header) return;
+    if (!header) return;
 
-    const sidebarWidth = sidebar.offsetWidth;
-    header.style.left = sidebarWidth + "px";
-    
+    // YOUR LOGIC: Resize/Shift based on sidebar
+    if (sidebar && sidebar.offsetWidth > 0) {{
+        header.style.left = sidebar.offsetWidth + "px";
+    }} else {{
+        header.style.left = "0px";
+    }}
 }}
 
-updateHeader();
+// Run periodically to catch the sidebar animation frame
+const interval = setInterval(updateHeader, 50);
+setTimeout(() => clearInterval(interval), 2000);
 
 const observer = new ResizeObserver(updateHeader);
 const sidebar = document.querySelector('[data-testid="stSidebar"]');
 if (sidebar) observer.observe(sidebar);
+
+// Re-run whenever the window changes
+window.addEventListener('resize', updateHeader);
 </script>
 """, unsafe_allow_html=True)
-
-
 
 
 

@@ -2,7 +2,7 @@
 services:
   doctubeai-client:
     build: .
-    image: doctubeai-client:latest
+    image: doctubeai-client:v1
     container_name: doctubeai-client
     ports:
       - "8501:8501"

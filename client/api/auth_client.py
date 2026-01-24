@@ -1,12 +1,12 @@
 import streamlit as st
 import httpx
-from utils.config import BACKEND_URL
+from utils.config import PUBLIC_BACKEND_URL
 from modules.cookie_helper import set_cookie_with_ttl
 
 
 def render_login():
     """Renders a polished Google Sign-in button for the sidebar."""
-    login_url = f"{BACKEND_URL}/login/google"
+    login_url = f"{PUBLIC_BACKEND_URL}/login/google"
     
     # Using official Google colors and a clean shadow effect
     login_button_html = f"""
@@ -52,7 +52,7 @@ def check_auth_callback():
             with httpx.Client() as client:
                 # 1. Exchange Auth Code for JWT
                 response = client.get(
-                    f"{BACKEND_URL}/auth/callback", 
+                    f"{PUBLIC_BACKEND_URL}/auth/callback", 
                     params={"code": auth_code},
                     timeout=10.0
                 )
