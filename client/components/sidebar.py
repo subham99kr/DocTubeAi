@@ -3,7 +3,7 @@ import uuid
 from api.auth_client import render_login
 from api.home_client import load_home
 from modules.switch_session import switch_session 
-from modules.cookie_helper import clear_auth_cookies
+# from modules.cookie_helper import clear_auth_cookies
 
 def render_sidebar():
     token = st.session_state.get("access_token")
@@ -11,7 +11,7 @@ def render_sidebar():
     
 
     with st.sidebar:
-
+        
         # Auth section
     
         if token and user:
@@ -27,8 +27,9 @@ def render_sidebar():
         
         # NEW CHAT BUTTON
         if st.button("➕ New Chat", use_container_width=True):
-            _handle_new_chat()
             st.session_state.title = "New Chat"
+            _handle_new_chat()
+            
 
         st.divider()
 
@@ -55,7 +56,7 @@ def render_sidebar():
                     st.session_state.title = title
                 
                 if st.button(
-                    f"{'🟩' if is_active else ''} {title[:12]} ", 
+                    f"{'🟩' if is_active else ''} {title[:12]}... ", 
                     key=f"side_{sid}", 
                     use_container_width=True,
                 ):
@@ -91,7 +92,7 @@ def _handle_new_chat():
 
 def _handle_logout():
     """Wipes session and generates a fresh guest ID."""
-    clear_auth_cookies()
+    # clear_auth_cookies()
     keys_to_clear = [
         "access_token", "user", "sessions", "history_synced", 
         "messages", "active_session_id", "uploaded_pdfs", "urls",

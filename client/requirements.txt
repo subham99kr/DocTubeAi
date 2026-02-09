@@ -1,5 +1,5 @@
 streamlit
 httpx
 requests
-streamlit-cookies-controller
+# streamlit-cookies-controller
 python-dotenv

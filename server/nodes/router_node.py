@@ -26,6 +26,7 @@ async def router_node(state: State, llm_factory):
                     "- If the user is asking to elaborate, clarify, continue, or explain MORE about an existing answer, "
                     "that does NOT require external information.\n\n"
                     "Rules:\n"
+                    "0. If the user asks question related to coding alway call ->chat , use ->tools only if he says to get context from uploaded_docs. " 
                     "1. If the user asks to explain, elaborate, review, debug, refactor, or continue -> chat\n"
                     "2. If the user asks for more details, clarification, or follow-up -> tools\n"
                     "3. If the user explicitly asks to search, find, look up, retrieve, or read from documents/PDFs -> tools\n"

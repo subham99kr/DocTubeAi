@@ -17,31 +17,36 @@ def handle_chat_logic(chat_container): # we take the container so that the input
     with chat_container:
         # 1. Show User Message
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        col1, col2 = st.columns([1, 3]) 
+        with col2:
+            with st.chat_message("user"):
+                st.markdown(prompt)
 
-        # 2. Show Assistant Response
-        with st.chat_message("assistant"):
-            response_placeholder = st.empty()
-            status_placeholder = st.empty()
-            full_response = ""
-            
-            try:
-                for event in stream_rag_response(sid, prompt, token):
-                    if isinstance(event, dict) and event.get("type") == "status":
-                        status_placeholder.markdown(f"✨ *{event['data']}*")
-                    else:
-                        status_placeholder.empty()
-                        full_response += event
-                        response_placeholder.markdown(full_response)
+        # 2. Show Assistant Response (Left Aligned)
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            with st.chat_message("assistant"):
+                response_placeholder = st.empty()
+                status_placeholder = st.empty()
+                full_response = ""
                 
-                st.session_state.messages.append({"role": "assistant", "content": full_response})
+                try:
+                    for event in stream_rag_response(sid, prompt, token):
+                        if isinstance(event, dict) and event.get("type") == "status":
+                            status_placeholder.markdown(f"✨ *{event['data']}*")
+                        else:
+                            status_placeholder.empty()
+                            # Append and display the stream
+                            full_response += event
+                            response_placeholder.markdown(full_response)
+                    
+                    st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-            except Exception as e:
-                st.error(f"Chat Error: {e}")
-            finally:
-                st.session_state.processing = False
-                st.rerun()
+                except Exception as e:
+                    st.error(f"Chat Error: {e}")
+                finally:
+                    st.session_state.processing = False
+                    st.rerun()
 
 def _promote_session_to_sidebar(first_query, current_sid):
     """Internal helper to create a sidebar entry."""

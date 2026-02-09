@@ -23,6 +23,7 @@ render_sidebar()
 # with col1:
 title = st.session_state.get("title", "New Chat")
 
+
 st.markdown(f"""
 <style>
 /* 1. Do NOT use display: none. Instead, make the background transparent. */
@@ -39,24 +40,31 @@ header[data-testid="stHeader"] button {{
 }}
 
 div.block-container {{
-    padding-top: 70px ;
+    padding-top: 2rem ;
+    padding-bottom: 0rem;
 }}
 
 .app-header {{
     position: fixed;
     top: 0;
-    height: 60px; 
-    width: 100%;
-    background: #0e1117;
+    height: 4rem; 
+    width: 90%;
+    background: #000000;
     color: white;
     display: flex;
     align-items: center;
-    padding: 0 60px; 
-    font-size: 20px;
+    padding: 0 0rem; 
+    font-size: 2rem;
     font-weight: 600;
     border-bottom: 1px solid #2c2f33;
     z-index: 99999;
     transition: left 0.2s ease;
+            
+    white-space: nowrap;     
+    overflow: hidden;          
+    text-overflow: ellipsis;   
+    display: block;            
+    line-height: 4rem;
 }}
 </style>
 
@@ -74,8 +82,10 @@ function updateHeader() {{
     // YOUR LOGIC: Resize/Shift based on sidebar
     if (sidebar && sidebar.offsetWidth > 0) {{
         header.style.left = sidebar.offsetWidth + "px";
+        header.style.width = 
     }} else {{
         header.style.left = "0px";
+        header.style.width = 
     }}
 }}
 
@@ -95,12 +105,13 @@ window.addEventListener('resize', updateHeader);
 
 
 # render_status()
+render_context_bar()
+
 
 chat_box = render_chat_window()
 
 handle_chat_logic(chat_box)
 
 # with col2:
-render_context_bar()
 
 render_chat_input()

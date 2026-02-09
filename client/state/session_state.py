@@ -1,19 +1,22 @@
 import streamlit as st
 import uuid
-from modules.cookie_helper import get_cookie_with_ttl
+# from modules.cookie_helper import get_cookie_with_ttl
 
 
 def initialize_session():
     
-    token = get_cookie_with_ttl("access_token")
-    user = get_cookie_with_ttl("user")
+    # token = get_cookie_with_ttl("access_token")
+    # user = get_cookie_with_ttl("user")
 
-    st.session_state.setdefault("access_token", token)
-    st.session_state.setdefault("user", user)
-    st.session_state.setdefault(
-        "user_status", 
-        "registered" if token else "guest"
-    )
+    # st.session_state.setdefault("access_token", token)
+    # st.session_state.setdefault("user", user)
+    # st.session_state.setdefault(
+    #     "user_status", 
+    #     "registered" if token else "guest"
+    # )
+    st.session_state.setdefault("access_token", None)
+    st.session_state.setdefault("user", None)
+
     st.session_state.setdefault("history_synced", False)
 
     # --- SESSION ---

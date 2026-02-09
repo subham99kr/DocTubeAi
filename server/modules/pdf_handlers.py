@@ -91,8 +91,9 @@ async def save_uploaded_files(files: List[UploadFile], session_id: str) -> List[
                 detail=f"Empty file received: {upload.filename}"
             )
 
-        async with aiofiles.open(safe_path, "wb") as out_f: # Read in chunks of 1 MB
-            await out_f.write(contents)
+        async with aiofiles.open(safe_path, "wb") as out_f: 
+            while content := await upload.read(1024 * 1024): # Read 1MB chunks stops ram overload
+                await out_f.write(content)
         
 
         # await upload.seek(0)

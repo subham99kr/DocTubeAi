@@ -1,7 +1,7 @@
 import streamlit as st
 import httpx
 from utils.config import PUBLIC_BACKEND_URL
-from modules.cookie_helper import set_cookie_with_ttl
+# from modules.cookie_helper import set_cookie_with_ttl
 
 
 def render_login():
@@ -66,8 +66,8 @@ def check_auth_callback():
                 st.session_state.history_synced = False
 
                 ##################### save the cookies ####################
-                set_cookie_with_ttl("access_token", auth_data["access_token"])
-                set_cookie_with_ttl("user", auth_data["user"])
+                # set_cookie_with_ttl("access_token", auth_data["access_token"])
+                # set_cookie_with_ttl("user", auth_data["user"])
 
 
                 # # 3. Claim Guest Sessions
