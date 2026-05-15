@@ -89,3 +89,23 @@ def get_chatbot_prompt():
         ),
         MessagesPlaceholder(variable_name="messages"),
     ])
+
+
+############################################################################################################################
+async def call_with_fallback(models, messages, temperature):
+    last_error = None
+
+    for model in models:
+        try:
+            llm = ChatGroq(
+                groq_api_key=GROQ_API_KEY,
+                model_name=model,
+                temperature=temperature,
+            )
+            return await llm.ainvoke(messages)
+
+        except Exception as e:
+            last_error = e
+            continue
+
+    raise RuntimeError(f"All models failed: {last_error}")

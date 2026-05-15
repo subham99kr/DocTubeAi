@@ -28,8 +28,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir \
         torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir \
-        sentence-transformers \
-        transformers \
+        transformers==4.38.2 \
         scikit-learn \
         scipy \
         numpy && \

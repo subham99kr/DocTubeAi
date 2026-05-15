@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0e1117;
+  color: white;
+  font-family: Inter, sans-serif;
+}
+
+
+/* =========================
+   PARTICLE BACKGROUND
+========================= */
+
+.particle-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 9999px;
+  opacity: 0.5;
+  filter: blur(1px);
+  animation: floatParticle linear infinite;
+}
+
+.particle::before,
+.particle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.7;
+}
+
+/* COLORS */
+
+.purple {
+  width: 40px;
+  height: 40px;
+  background: #241379;
+  top: 10%;
+  left: 20%;
+  animation-duration: 28s;
+}
+
+.medium-blue {
+  width: 32px;
+  height: 32px;
+  background: #2185bf;
+  top: 70%;
+  left: 15%;
+  animation-duration: 32s;
+}
+
+.light-blue {
+  width: 24px;
+  height: 24px;
+  background: #1fbce1;
+  top: 20%;
+  left: 75%;
+  animation-duration: 22s;
+}
+
+.red {
+  width: 44px;
+  height: 44px;
+  background: #b62f56;
+  top: 55%;
+  left: 60%;
+  animation-duration: 35s;
+}
+
+.orange {
+  width: 26px;
+  height: 26px;
+  background: #d5764c;
+  top: 85%;
+  left: 45%;
+  animation-duration: 25s;
+}
+
+
+.yellow {
+  width: 20px;
+  height: 20px;
+  background: #ffd53e;
+  top: 35%;
+  left: 40%;
+  animation-duration: 20s;
+}
+
+.cyan {
+  width: 38px;
+  height: 38px;
+  background: #78ffba;
+  top: 60%;
+  left: 80%;
+  animation-duration: 30s;
+}
+
+.light-green {
+  width: 28px;
+  height: 28px;
+  background: #98fd85;
+  top: 15%;
+  left: 55%;
+  animation-duration: 24s;
+}
+
+.lime {
+  width: 36px;
+  height: 36px;
+  background: #befb46;
+  top: 75%;
+  left: 30%;
+  animation-duration: 34s;
+}
+
+.magenta {
+  width: 34px;
+  height: 34px;
+  background: #6c046c;
+  top: 40%;
+  left: 88%;
+  animation-duration: 29s;
+}
+
+.lightish-red {
+  width: 30px;
+  height: 30px;
+  background: #f04c81;
+  top: 5%;
+  left: 5%;
+  animation-duration: 23s;
+}
+
+.pink {
+  width: 42px;
+  height: 42px;
+  background: #ff4293;
+  top: 90%;
+  left: 70%;
+  animation-duration: 31s;
+}
+
+@keyframes floatParticle {
+  0% {
+    transform: translate3d(0, 0, 0)
+      scale(1)
+      rotate(0deg);
+  }
+
+  25% {
+    transform: translate3d(
+        60px,
+        -80px,
+        0
+      )
+      scale(1.2)
+      rotate(90deg);
+  }
+
+  50% {
+    transform: translate3d(
+        -40px,
+        -120px,
+        0
+      )
+      scale(0.9)
+      rotate(180deg);
+  }
+
+  75% {
+    transform: translate3d(
+        80px,
+        -60px,
+        0
+      )
+      scale(1.1)
+      rotate(270deg);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0)
+      scale(1)
+      rotate(360deg);
+  }
+}
+
+/* =========================
+   GLASS EFFECT
+========================= */
+
+.glass-message {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    0 8px 32px
+      rgba(0, 0, 0, 0.25),
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.08);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.glass-message:hover {
+  transform: translateY(-2px)
+    scale(1.01);
+
+  border-color: rgba(
+    255,
+    255,
+    255,
+    0.16
+  );
+
+  box-shadow:
+    0 16px 40px
+      rgba(0, 0, 0, 0.35),
+    0 0 30px
+      rgba(59, 130, 246, 0.15);
+}

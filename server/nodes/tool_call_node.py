@@ -1,21 +1,24 @@
 from langchain_core.messages import HumanMessage
 from state.state import State
 
+
 async def tool_call_node(state: State, tool_llm_factory, tools):
     """
     Tool-only node.
     """
 
-    # 🔑 Extract ONLY the last human message
+    # Extract ONLY the last human message
     last_human = next(
         m for m in reversed(state["messages"])
         if isinstance(m, HumanMessage)
     )
+
     # Initialize / increment tool loop counter
     state["tool_steps"] = state.get("tool_steps", 0) + 1
+
+    # Hard stop for infinite tool loops
     if state["tool_steps"] > 3:
-        # Hard stop: no more tools
-        state["route"] = "end"
+        state["route"] = "fallback"
         return state
 
     llm = (
@@ -33,13 +36,13 @@ async def tool_call_node(state: State, tool_llm_factory, tools):
                 "Return ONLY a tool call."
             ),
         },
-        last_human,   
+        last_human,
     ])
 
+    # Graceful fallback if model fails to emit tool calls
     if not getattr(response, "tool_calls", None):
-        raise RuntimeError(
-            "ToolCallNode failed: model did not emit tool_calls"
-        )
+        state["route"] = "fallback"
+        return state
 
     # Append, do NOT overwrite state
     state["messages"].append(response)

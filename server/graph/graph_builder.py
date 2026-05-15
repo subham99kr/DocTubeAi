@@ -65,15 +65,28 @@ class RAGGraphBuilder:
             },
         )
 
-        self.builder.add_edge("tool_call", "tools")
+        # self.builder.add_edge("tool_call", "tools")
+        self.builder.add_conditional_edges(
+            "tool_call",
+            lambda s: s.get("route", "tools"),
+            {
+                "tools": "tools",
+                "fallback": "chatbot",
+                "end": "chatbot",
+            },
+        )
+
         self.builder.add_edge("chatbot", "prune")
+
         # self.builder.add_edge("chatbot", END)
+
         self.builder.add_conditional_edges(
             "tools",
             lambda s: s.get("route", "end"),
             {
                 "tools": "tool_call",
-                "end": "chatbot",         # finish
+                "end": "chatbot",
+                "fallback": "chatbot",
             },
         )
         self.builder.add_edge("prune", END)

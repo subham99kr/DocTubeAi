@@ -83,7 +83,6 @@ def render_context_bar():
 
         # --- POPOVER ---
         with st.popover("📎 Current Context", use_container_width=True):
-             # ... (your existing context view code) ...
              st.write(f"Current Files: {len(st.session_state.uploaded_pdfs)}")
 
         st.markdown('</div>', unsafe_allow_html=True)

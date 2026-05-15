@@ -48,7 +48,7 @@ tavily-python
 pypdf
 
 # sentence-transformers does the below thing.. just wrote it for safety
-# sentence-transformers
+sentence-transformers==2.6.1 
 # torch
 # transformers
 # scikit-learn
