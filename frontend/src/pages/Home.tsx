@@ -90,10 +90,13 @@ export default function Home() {
           data.user
         );
 
+        const cleanUrl =
+          window.location.pathname;
+
         window.history.replaceState(
           {},
           document.title,
-          "/"
+          cleanUrl
         );
       } catch (error) {
         console.error(

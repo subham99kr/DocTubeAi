@@ -1,111 +1,215 @@
 import os
+
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+)
 
 load_dotenv()
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
-CHAT_MODELS = [
-    m.strip() for m in os.getenv("CHAT_MODELS", "").split(",") if m.strip()
+
+# =========================================================
+# MODEL CONFIGS
+# =========================================================
+
+ROUTER_MODELS = [
+    m.strip()
+    for m in os.getenv("ROUTER_MODELS", "").split(",")
+    if m.strip()
+]
+
+SIMPLE_CHAT_MODELS = [
+    m.strip()
+    for m in os.getenv("SIMPLE_CHAT_MODELS", "").split(",")
+    if m.strip()
 ]
 
 TOOL_MODELS = [
-    m.strip() for m in os.getenv("TOOL_MODELS", "").split(",") if m.strip()
+    m.strip()
+    for m in os.getenv("TOOL_MODELS", "").split(",")
+    if m.strip()
 ]
 
-def _get_llm(models, temperature: float):
+RAG_MODELS = [
+    m.strip()
+    for m in os.getenv("RAG_MODELS", "").split(",")
+    if m.strip()
+]
+
+
+# =========================================================
+# BASE FACTORY
+# =========================================================
+
+def _build_llm(
+    models,
+    temperature: float,
+):
     """
-    Returns the first available model.
-    Falls back automatically on failure.
+    Creates LLM instance from configured models.
+
+    NOTE:
+    This only validates model construction.
+    Runtime failures still happen during:
+    - invoke()
+    - ainvoke()
     """
+
+    if not models:
+        raise RuntimeError("No models configured.")
+
     last_error = None
 
     for model in models:
+
         try:
+
             return ChatGroq(
                 groq_api_key=GROQ_API_KEY,
                 model_name=model,
                 temperature=temperature,
-                
             )
+
         except Exception as e:
+
             last_error = e
             continue
 
     raise RuntimeError(
-        f"No LLM models available. Last error: {last_error}"
+        f"Failed to initialize model. Last error: {last_error}"
     )
 
 
-def get_chat_model():
+# =========================================================
+# ROUTER MODEL
+# =========================================================
+
+def get_router_model():
     """
-    Chat-only LLM.
-    - Used for explanations, debugging, reasoning
-    - NEVER binds tools
+    Router classifier model.
+
+    Responsibilities:
+    - decide simple chat vs tools workflow
+    - lightweight classification only
+
+    SHOULD BE:
+    - very fast
+    - cheap
     """
-    return _get_llm(
-        models=CHAT_MODELS,
+
+    return _build_llm(
+        models=ROUTER_MODELS,
+        temperature=0,
+    )
+
+
+# =========================================================
+# SIMPLE CHAT MODEL
+# =========================================================
+
+def get_simple_chat_model():
+    """
+    Direct response model.
+
+    Used for:
+    - greetings
+    - coding questions
+    - explanations
+    - casual chat
+    - unsupported requests
+    - lightweight reasoning
+
+    DOES NOT use retrieval.
+    """
+
+    return _build_llm(
+        models=SIMPLE_CHAT_MODELS,
         temperature=0.3,
     )
 
 
+# =========================================================
+# TOOL PLANNER MODEL
+# =========================================================
+
 def get_tool_model():
     """
-    Tool-capable LLM.
-    - Tools are bound ONLY inside tool nodes
+    Tool orchestration model.
+
+    Responsibilities:
+    - choose tools
+    - emit tool calls
+    - structured planning
+
+    SHOULD BE:
+    - deterministic
+    - reliable with tools
     """
-    return _get_llm(
+
+    return _build_llm(
         models=TOOL_MODELS,
         temperature=0,
     )
 
 
+# =========================================================
+# RAG SYNTHESIS MODEL
+# =========================================================
+
+def get_rag_model():
+    """
+    Final RAG synthesis model.
+
+    Responsibilities:
+    - combine retrieved evidence
+    - compare sources
+    - synthesize grounded answers
+    - resolve contradictions
+
+    This is the strongest reasoning model.
+    """
+
+    return _build_llm(
+        models=RAG_MODELS,
+        temperature=0.3,
+    )
+
+
+# =========================================================
+# RAG PROMPT
+# =========================================================
+
 def get_chatbot_prompt():
-    """
-    Prompt template for chat reasoning.
-    This prompt NEVER assumes tool usage.
-    """
+
     return ChatPromptTemplate.from_messages([
         (
             "system",
-            """You are an ai assistant that can do multi-source verification. Your name is "DocTubeAi".
+            """
+            You are DocTubeAI, an AI assistant capable of multi-source reasoning and verification.
 
-                FOR COMPLEX QUERY YOU CAN:
-                1. Use web-scraped content to summarize the primary source.
-                2. Cross-check claims using:
-                - Internal database search results
-                - Internet search results
-                3. Explicitly state:
-                - What is confirmed
-                - What is outdated or inconsistent
-                - What could not be verified
-                4. If multiple sources agree, say so.
-                5. If sources disagree, highlight the discrepancy.
-                6. Do NOT provide a generic summary when verification was requested.
-                7. In the end also provide the origins only if you had tool calls.
+            Your responsibilities:
+            1. Answer clearly and directly.
+            2. Use retrieved evidence when available.
+            3. Cross-check information across:
+            - uploaded documents
+            - transcript retrieval
+            - internet search
+            - URL extraction
+            4. Clearly distinguish:
+            - confirmed information
+            - conflicting information
+            - missing or unverifiable information
+            5. If multiple sources agree, mention that.
+            6. If sources disagree, explain the discrepancy.
+            7. Avoid hallucinating unsupported claims.
+            8. Do NOT pretend retrieval occurred if no tools were used.
+            9. Keep responses concise unless detailed explanation is requested.
             """
         ),
+
         MessagesPlaceholder(variable_name="messages"),
     ])
-
-
-############################################################################################################################
-async def call_with_fallback(models, messages, temperature):
-    last_error = None
-
-    for model in models:
-        try:
-            llm = ChatGroq(
-                groq_api_key=GROQ_API_KEY,
-                model_name=model,
-                temperature=temperature,
-            )
-            return await llm.ainvoke(messages)
-
-        except Exception as e:
-            last_error = e
-            continue
-
-    raise RuntimeError(f"All models failed: {last_error}")

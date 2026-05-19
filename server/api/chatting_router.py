@@ -29,14 +29,24 @@ async def run_rag(
     await verify_and_initialize_session(req.session_id, oauth_id,req.query)
     
     try:
-        request_obj = {
-            "users_query": req.query, 
-            "session_id": req.session_id,
-            "oauthID": oauth_id, 
+        initial_state = {
+            "messages": [...],
+            "query": req.query,
+            "route": "",
+            "tool_steps": 0,
+            "retrieval_complete": False,
+            "used_tools": [],
+            "agent_scratchpad": [],
+            "retrieved_chunks": [],
+            "reranked_chunks": [],
+            "selected_chunks": [],
+            "tool_outputs": [],
+            "sources_used": [],
+            "next_tool_hint": "",
         }
 
         # 2. Invoke Graph logic
-        result = await ask_with_graph(request_obj)
+        result = await ask_with_graph(initial_state)
         
         if "detail" in result:
             raise HTTPException(status_code=500, detail=result["detail"])

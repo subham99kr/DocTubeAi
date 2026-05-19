@@ -1,0 +1,8 @@
+react
+react-dom
+react-router-dom
+framer-motion
+lucide-react
+react-markdown
+react-syntax-highlighter
+--save-dev @types/react-syntax-highlighter

@@ -43,7 +43,7 @@ function StreamingMessage({
           </div>
 
           {/* blinking cursor */}
-          <span className="inline-block w-[8px] h-[18px] ml-1 rounded-sm bg-cyan-400 animate-pulse align-middle" />
+          <span className="ml-1 text-cyan-400 animate-pulse"> ▋ </span>
         </div>
       </motion.div>
     </div>

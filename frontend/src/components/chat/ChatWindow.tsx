@@ -1,30 +1,17 @@
-import {
-  useEffect,
-  useRef,
-  memo,
-} from "react";
-
+import {useEffect,useRef,memo} from "react";
 import { useChat } from "../../context/ChatContext";
-
 import ChatMessage from "./ChatMessage";
-
 import StreamingMessage from "./StreamingMessage";
-
-import {
-  motion,
-  AnimatePresence,
-} from "framer-motion";
+import {motion,AnimatePresence} from "framer-motion";
 
 function ChatWindow() {
   const { messages } = useChat();
 
-  const scrollRef =
-    useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const firstLoadRef =
-    useRef(true);
+  const firstLoadRef = useRef(true);
 
-  // SMART AUTO SCROLL
+  //AUTO SCROLL
   useEffect(() => {
     const container =
       scrollRef.current;

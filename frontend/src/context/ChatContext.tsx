@@ -70,7 +70,7 @@ type Props = {
   children: ReactNode;
 };
 
-function generateSessionId() {
+function generateSessionId(): string {
   return crypto.randomUUID();
 }
 

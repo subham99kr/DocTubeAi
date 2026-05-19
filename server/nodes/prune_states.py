@@ -1,28 +1,37 @@
 from state.state import State
 
-async def prune_state_node(state: State) -> State:
+async def prune_state_node(
+    state: State,
+) -> State:
     """
-    Keep ONLY:
-    - last human message
-    - last AI message
+    Cleanup transient workflow state.
+
+    Preserves:
+    - conversation messages
+
+    Clears:
+    - retrieval artifacts
+    - planner memory
+    - execution metadata
     """
-
-    last_human = None
-    last_ai = None
-
-    for msg in reversed(state["messages"]):
-        if last_ai is None and msg.type == "ai":
-            last_ai = msg
-        elif last_human is None and msg.type == "human":
-            last_human = msg
-
-        if last_human and last_ai:
-            break
-
-    new_messages = []
-    if last_human:
-        new_messages.append(last_human)
-    if last_ai:
-        new_messages.append(last_ai)
-
-    return {"messages": new_messages}
+    # -----------------------------------------
+    # Routing / execution
+    # -----------------------------------------
+    state["route"] = ""
+    state["tool_steps"] = 0
+    state["retrieval_complete"] = False
+    state["next_tool_hint"] = ""
+    # -----------------------------------------
+    # Retrieval memory
+    # -----------------------------------------
+    state["retrieved_chunks"] = []
+    state["reranked_chunks"] = []
+    state["selected_chunks"] = []
+    # -----------------------------------------
+    # Agent memory
+    # -----------------------------------------
+    state["used_tools"] = []
+    state["agent_scratchpad"] = []
+    state["tool_outputs"] = []
+    state["sources_used"] = []
+    return state

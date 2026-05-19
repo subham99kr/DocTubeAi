@@ -1,0 +1,22 @@
+services:
+  frontend:
+    build: .
+
+    container_name: doctubeai-frontend
+
+    ports:
+      - "5173:5173"
+
+    env_file:
+      - .env
+
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+    stdin_open: true
+
+    tty: true

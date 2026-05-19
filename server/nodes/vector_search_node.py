@@ -1,32 +1,108 @@
-
-
-from tools.vector_search import run_vector_search
-from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import tool
 import logging
+
+from state.state import State
+
+from tools.vector_search import (
+    run_vector_search,
+)
+
 logger = logging.getLogger(__name__)
 
 
-@tool
-async def docs_or_Youtube_video_or_pdf_Search(query:str,config:RunnableConfig) -> str:
-    """
-    PRIMARY SEARCH TOOL. Use this FIRST for any questions about the user's 
-    uploaded PDFs, documents, YouTube transcripts, youtube title . 
-    This contains the private, specific knowledge the user is asking about.
-    """
-    
-    
-    session_id = config.get("configurable", {}).get("session_id")
-#     collection = config.get("configurable", {}).get("mongo_collection")
-#     embeddings = config.get("configurable", {}).get("embeddings")
-    
-    
-    # We call the logic function (the tool)
-    logger.info(f"Calling vector logic for session id: {session_id}")
-    context = await run_vector_search(query,session_id)
-    if not context:
-        return "[VECTOR_DB]\nNo relevant information found from the uploaded pdf(s)/youtube link(s)."
+async def vector_search_node(
+    state: State,
+    config,
+):
 
+    query = state["query"]
 
-    # return {"vector_context": context}
-    return f"[VECTOR_DB]\n{context}"
+    configurable = config.get(
+        "configurable",
+        {},
+    )
+
+    session_id = configurable.get(
+        "session_id",
+    )
+
+    try:
+
+        logger.info(
+            f"📚 Vector search "
+            f"for session: {session_id}"
+        )
+
+        context = await run_vector_search(
+            query,
+            session_id,
+        )
+
+        state["used_tools"].append(
+            "vector_search"
+        )
+
+        if not context:
+
+            state["tool_outputs"].append({
+                "tool": "vector_search",
+                "success": False,
+                "summary": (
+                    "No relevant vector "
+                    "results found."
+                ),
+            })
+
+            state["agent_scratchpad"].append(
+                "Vector search returned "
+                "no useful context."
+            )
+
+            return state
+
+        chunk = {
+            "source_type": "vector_db",
+            "source_name": "user_documents",
+            "content": context,
+        }
+
+        state["retrieved_chunks"].append(
+            chunk
+        )
+
+        state["tool_outputs"].append({
+            "tool": "vector_search",
+            "success": True,
+            "summary": (
+                "Retrieved vector "
+                "database context."
+            ),
+        })
+
+        state["agent_scratchpad"].append(
+            "Vector search retrieved "
+            "relevant document context."
+        )
+
+        state["sources_used"].append(
+            "vector_db"
+        )
+
+        return state
+
+    except Exception as e:
+
+        logger.error(
+            f"❌ Vector search failed: "
+            f"{str(e)}",
+            exc_info=True,
+        )
+
+        state["tool_outputs"].append({
+            "tool": "vector_search",
+            "success": False,
+            "summary": (
+                "Vector search failed."
+            ),
+        })
+
+        return state

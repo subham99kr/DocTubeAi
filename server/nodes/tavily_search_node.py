@@ -1,32 +1,105 @@
-from langchain_core.tools import tool
-from tools.tavily_search import run_tavily_search 
-from langchain_core.runnables import RunnableConfig
 import logging
+
+from state.state import State
+
+from tools.tavily_search import (
+    run_tavily_search,
+)
 
 logger = logging.getLogger(__name__)
 
-@tool
-async def internet_search(
-    to_search: str, 
-    config: RunnableConfig
-) -> str:
-    """
-    USE THIS ONLY AS A LAST RESORT. 
-    If the user asks about specific files, transcripts, or uploaded content, 
-    you MUST use 'docs_or_Youtube_video_or_pdf_Search' first.
-    Only use this if the local search returns 'No relevant information found' 
-    or if the question is about current world events (e.g., today's news).
-    """
-    # logger.info(f"🚀 internet_search tools triggered with query: {to_search}")
-    
-    configurable = config.get("configurable", {})
-    client = configurable.get("tavily_client")
-    
+
+async def internet_search_node(
+    state: State,
+    config,
+):
+
+    query = state["query"]
+
+    configurable = config.get(
+        "configurable",
+        {},
+    )
+
+    client = configurable.get(
+        "tavily_client",
+    )
+
     try:
-        # Call the renamed logic function
-        logger.info("starting the tavily logic")
-        context = await run_tavily_search(client, to_search)
-        return f"[INTERNET_SEARCH]\n{context}" if context else "[INTERNET_SEARCH]\nNo results found."
+
+        logger.info(f"🌐 Internet search: "f"{query}")
+
+        context = await run_tavily_search(
+            client,
+            query,
+        )
+
+        state["used_tools"].append(
+            "internet_search"
+        )
+
+        if not context:
+
+            state["tool_outputs"].append({
+                "tool": "internet_search",
+                "success": False,
+                "summary": (
+                    "No internet search "
+                    "results found."
+                ),
+            })
+
+            state["agent_scratchpad"].append(
+                "Internet search returned "
+                "no useful results."
+            )
+
+            return state
+
+        chunk = {
+            "source_type": "internet",
+            "source_name": "tavily",
+            "content": context,
+        }
+
+        state["retrieved_chunks"].append(
+            chunk
+        )
+
+        state["tool_outputs"].append({
+            "tool": "internet_search",
+            "success": True,
+            "summary": (
+                "Retrieved internet "
+                "search results."
+            ),
+        })
+
+        state["agent_scratchpad"].append(
+            "Internet search retrieved "
+            "external web information."
+        )
+
+        state["sources_used"].append(
+            "internet"
+        )
+
+        return state
+
     except Exception as e:
-        logger.error(f"❌ Tool execution crashed: {str(e)}", exc_info=True)
-        return "An internal error occurred during search."
+
+        logger.error(
+            f"❌ Internet search failed: "
+            f"{str(e)}",
+            exc_info=True,
+        )
+
+        state["tool_outputs"].append({
+            "tool": "internet_search",
+            "success": False,
+            "summary": (
+                "Internet search failed."
+            ),
+        })
+
+        return state

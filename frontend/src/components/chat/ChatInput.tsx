@@ -101,25 +101,41 @@ export default function ChatInput({
           </button>
 
           {/* Input */}
-          <input
-            type="text"
-            value={input}
-            disabled={disabled}
-            onChange={(e) =>
-              setInput(
-                e.target.value
-              )
+          <textarea
+          value={input}
+          disabled={disabled}
+          rows={1}
+          onChange={(e) => {
+            setInput(e.target.value);
+
+            // auto resize
+            e.target.style.height = "auto";
+            e.target.style.height =
+              e.target.scrollHeight + "px";
+          }}
+          onKeyDown={(e) => {
+            if (
+              e.key === "Enter" &&
+              !e.shiftKey
+            ) {
+              e.preventDefault();
+              handleSubmit();
             }
-            onKeyDown={(e) => {
-              if (
-                e.key === "Enter"
-              ) {
-                handleSubmit();
-              }
-            }}
-            placeholder="Ask something..."
-            className="flex-1 min-w-0 bg-transparent outline-none text-white text-sm sm:text-base"
-          />
+          }}
+          placeholder="Ask something..."
+          className="
+            flex-1
+            min-w-0
+            bg-transparent
+            outline-none
+            text-white
+            text-sm
+            sm:text-base
+            resize-none
+            overflow-hidden
+            max-h-40
+          "
+        />
 
           {/* Send Button */}
           <button
