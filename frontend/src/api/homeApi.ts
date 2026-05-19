@@ -7,7 +7,12 @@ export async function loadHome(
   const response = await fetch(
     `${BACKEND_URL}/home_init`,
     {
+      method: "GET",
+
       headers: {
+        "Content-Type":
+          "application/json",
+
         ...(token
           ? {
               Authorization: `Bearer ${token}`,

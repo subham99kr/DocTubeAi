@@ -8,7 +8,12 @@ export async function loadHistory(
   const response = await fetch(
     `${BACKEND_URL}/chats/history/${sessionId}`,
     {
+      method: "GET",
+
       headers: {
+        "Content-Type":
+          "application/json",
+
         ...(token
           ? {
               Authorization: `Bearer ${token}`,

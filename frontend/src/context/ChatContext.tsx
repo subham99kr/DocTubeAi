@@ -74,14 +74,28 @@ function generateSessionId(): string {
   return crypto.randomUUID();
 }
 
+// INITIAL CHAT
+const initialSessionId =
+  generateSessionId();
+
+const initialSession: Session = {
+  session_id:
+    initialSessionId,
+
+  title: "New Chat",
+};
+
 export function ChatProvider({
   children,
 }: Props) {
   const [messages, setMessages] =
     useState<Message[]>([]);
 
+  // ACTIVE SESSION
   const [sessionId, setSessionId] =
-    useState(generateSessionId());
+    useState(
+      initialSessionId
+    );
 
   const [loading, setLoading] =
     useState(false);
@@ -91,13 +105,16 @@ export function ChatProvider({
     setUploadedPdfs,
   ] = useState<string[]>([]);
 
-  const [urls, setUrls] = useState<
-    string[]
-  >([]);
+  const [urls, setUrls] =
+    useState<string[]>(
+      []
+    );
 
-  // GLOBAL SESSIONS
+  // SESSION LIST STARTS WITH NEW CHAT
   const [sessions, setSessions] =
-    useState<Session[]>([]);
+    useState<Session[]>([
+      initialSession,
+    ]);
 
   // STREAM STATUS
   const [status, setStatus] =

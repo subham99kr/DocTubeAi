@@ -70,7 +70,7 @@ def _build_llm(
 
             return ChatGroq(
                 groq_api_key=GROQ_API_KEY,
-                model_name=model,
+                model=model,
                 temperature=temperature,
             )
 

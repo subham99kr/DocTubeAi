@@ -21,7 +21,6 @@ export function useSessions() {
     setUrls,
     setSessionId,
 
-    // GLOBAL sessions
     sessions,
     setSessions,
   } = useChat();
@@ -29,15 +28,16 @@ export function useSessions() {
   const [loading, setLoading] =
     useState(false);
 
-  // Prevent repeated fetches
   const hasFetched =
     useRef(false);
 
   useEffect(() => {
-    if (!token) {
-      setSessions([]);
-      hasFetched.current = false;
-      return;
+    // reset only when explicitly logged out
+    if (
+      token === null
+    ) {
+      hasFetched.current =
+        false;
     }
 
     // already fetched
@@ -54,13 +54,13 @@ export function useSessions() {
   }, [token]);
 
   async function fetchSessions() {
-    if (!token) return;
-
     try {
       setLoading(true);
 
       const data =
-        await loadHome(token);
+        await loadHome(
+          token || undefined
+        );
 
       console.log(
         "Loaded Sessions:",
@@ -80,21 +80,22 @@ export function useSessions() {
     }
   }
 
-  // ONLY UPDATE switchSession
-
   async function switchSession(
     sessionId: string
   ) {
-    if (!token) return;
-
     try {
       setLoading(true);
 
       const data =
         await loadHistory(
           sessionId,
-          token
+          token || undefined
         );
+
+      console.log(
+        "Loaded Session:",
+        data
+      );
 
       setSessionId(
         data.session_id
@@ -117,7 +118,7 @@ export function useSessions() {
 
       setUrls(mappedUrls);
 
-      // FORCE SCROLL FLAG
+      // scroll to bottom instantly
       sessionStorage.setItem(
         "history_loaded",
         "true"
