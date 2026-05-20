@@ -9,14 +9,7 @@ type AskChatParams = {
   onDone?: () => void;
 };
 
-export async function askChat({
-  sessionId,
-  query,
-  token,
-  onStatus,
-  onToken,
-  onDone,
-}: AskChatParams) {
+export async function askChat({sessionId, query, token, onStatus, onToken, onDone}: AskChatParams) {
   return streamChatResponse({
     sessionId,
     query,

@@ -1,16 +1,12 @@
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-const PUBLIC_BACKEND_URL =
-  import.meta.env.VITE_PUBLIC_BACKEND_URL;
+const PUBLIC_BACKEND_URL = import.meta.env.VITE_PUBLIC_BACKEND_URL;
 
 export function getGoogleLoginUrl() {
   return `${PUBLIC_BACKEND_URL}/login/google`;
 }
 
-export async function exchangeCodeForToken(
-  code: string
-) {
+export async function exchangeCodeForToken(code: string) {
   const response = await fetch(
     `${PUBLIC_BACKEND_URL}/auth/callback?code=${code}`,
     {
@@ -27,9 +23,7 @@ export async function exchangeCodeForToken(
   return response.json();
 }
 
-export async function validateToken(
-  token: string
-) {
+export async function validateToken(token: string) {
   const response = await fetch(
     `${BACKEND_URL}/auth/me`,
     {

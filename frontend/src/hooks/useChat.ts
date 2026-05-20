@@ -1,82 +1,85 @@
 import { askChat } from "../api/chatApi";
-
 import { useChat as useChatContext } from "../context/ChatContext";
-
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export function useChat() {
   const {
     sessionId,
-
     messages,
     setMessages,
-
     loading,
     setLoading,
-
     sessions,
     setSessions,
-
     status,
     setStatus,
   } = useChatContext();
 
   const { token } = useAuth();
+  const navigate = useNavigate();
 
-  async function sendMessage(
-    query: string
-  ) {
-    if (!query.trim()) {
-      return;
-    }
 
-    if (loading) {
-      return;
-    }
+  async function sendMessage(query: string) {
+    if (!query.trim() || loading) return;
 
     setLoading(true);
 
     let finalResponse = "";
 
-    // THROTTLE BUFFER
-    let timeoutId:
-      | ReturnType<
-          typeof setTimeout
-        >
-      | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    // Rename temporary chat
-    const currentSession =
-      sessions.find(
-        (s) =>
-          s.session_id ===
-          sessionId
-      );
+    let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 
-    if (
-      currentSession?.title ===
-      "New Chat"
-    ) {
+    const stopStreaming = () => {
+      setMessages((prev) => {
+        const updated = [...prev];
+        const last = updated.length - 1;
+
+        if (updated[last]?.role === "assistant")
+          updated[last] = {
+            ...updated[last],
+            content: finalResponse,
+            streaming: false,
+          };
+
+        return updated;
+      });
+
+      setLoading(false);
+
+      setTimeout(() => setStatus(""), 800);
+    };
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+
+      inactivityTimer = setTimeout(() => {
+        console.warn("Force closing inactive stream");
+        stopStreaming();
+      }, 2000);
+    };
+
+    const currentSession = sessions.find(
+      (s) => s.session_id === sessionId
+    );
+
+    if (currentSession?.title === "New Chat") {
       const title =
         query.length > 30
-          ? query.slice(0, 30) +
-            "..."
+          ? query.slice(0, 30) + "..."
           : query;
 
       setSessions((prev) =>
         prev.map((session) =>
-          session.session_id ===
-          sessionId
-            ? {
-                ...session,
-                title,
-              }
+          session.session_id === sessionId
+            ? { ...session, title }
             : session
         )
       );
+      
     }
 
-    // Add user + assistant placeholder
     setMessages((prev) => [
       ...prev,
 
@@ -93,116 +96,74 @@ export function useChat() {
     ]);
 
     try {
+      resetInactivityTimer();
+
       await askChat({
         sessionId,
         query,
-        token:
-          token || undefined,
+        token: token || undefined,
 
-        // STATUS EVENTS
-        onStatus(
-          statusMessage
-        ) {
-          setStatus(
-            statusMessage
-          );
+        onStatus(statusMessage) {
+          resetInactivityTimer();
+          setStatus(statusMessage);
         },
 
-        // TOKEN STREAM
         onToken(tokenChunk) {
-          finalResponse +=
-            tokenChunk;
+          resetInactivityTimer();
 
-          // normalize markdown fences
-          finalResponse =
-            finalResponse.replace(
-              /`\s*`\s*`/g,
-              "```"
-            );
+          finalResponse += tokenChunk;
 
-          // already scheduled
-          if (timeoutId) {
-            return;
-          }
-
-          // THROTTLED UI UPDATE
-          timeoutId = setTimeout(
-            () => {
-              setMessages(
-                (prev) => {
-                  const updated =
-                    [...prev];
-
-                  updated[
-                    updated.length -
-                      1
-                  ] = {
-                    role:
-                      "assistant",
-                    content:
-                      finalResponse,
-                    streaming: true,
-                  };
-
-                  return updated;
-                }
-              );
-
-              timeoutId = null;
-            },
-            35
+          finalResponse = finalResponse.replace(
+            /`\s*`\s*`/g,
+            "```"
           );
+
+          if (timeoutId) return;
+
+          timeoutId = setTimeout(() => {
+            setMessages((prev) => {
+              const updated = [...prev];
+
+              updated[updated.length - 1] = {
+                role: "assistant",
+                content: finalResponse,
+                streaming: true,
+              };
+
+              return updated;
+            });
+
+            timeoutId = null;
+          }, 35);
         },
 
-        // STREAM DONE
         onDone() {
-          // flush final render
-          setMessages((prev) => {
-            const updated = [
-              ...prev,
-            ];
+          console.log("STREAM DONE");
 
-            const last =
-              updated.length - 1;
+          if (inactivityTimer)
+            clearTimeout(inactivityTimer);
 
-            if (
-              updated[last]
-                ?.role ===
-              "assistant"
-            ) {
-              updated[last] = {
-                ...updated[last],
-                content:
-                  finalResponse,
-                streaming: false,
-              };
-            }
+          stopStreaming();
 
-            return updated;
-          });
+          //silently navigate to that link
+          navigate(
+            `/chats/history/${sessionId}`,
+            { replace: true }
+          );
 
-          setLoading(false);
-
-          setTimeout(() => {
-            setStatus("");
-          }, 800);
         },
       });
     } catch (error) {
-      console.error(
-        "CHAT ERROR:",
-        error
-      );
+      console.error("CHAT ERROR:", error);
+
+      if (inactivityTimer)
+        clearTimeout(inactivityTimer);
 
       setLoading(false);
 
-      setStatus(
-        "Error generating response"
-      );
+      setStatus("Error generating response");
 
-      setTimeout(() => {
-        setStatus("");
-      }, 2000);
+      setTimeout(() => setStatus(""), 2000);
     }
   }
 

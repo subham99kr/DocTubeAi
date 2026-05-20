@@ -30,15 +30,18 @@ export default function SessionList({
       {sessions.map((session) => (
         <motion.button
           key={session.session_id}
-          onClick={() => {
-            onSelect(
-              session.session_id
-            );
+
+          onClick={async () => {
 
             navigate(
               `/chats/history/${session.session_id}`
             );
+
+            await onSelect(
+              session.session_id
+            );
           }}
+
           whileHover={{
             scale: 1.02,
           }}

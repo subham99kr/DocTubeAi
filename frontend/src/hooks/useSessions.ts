@@ -1,7 +1,6 @@
 import {
   useEffect,
   useState,
-  useRef,
 } from "react";
 
 import { loadHome } from "../api/homeApi";
@@ -19,6 +18,7 @@ export function useSessions() {
     setMessages,
     setUploadedPdfs,
     setUrls,
+    sessionId,
     setSessionId,
 
     sessions,
@@ -28,29 +28,10 @@ export function useSessions() {
   const [loading, setLoading] =
     useState(false);
 
-  const hasFetched =
-    useRef(false);
+
 
   useEffect(() => {
-    // reset only when explicitly logged out
-    if (
-      token === null
-    ) {
-      hasFetched.current =
-        false;
-    }
-
-    // already fetched
-    if (
-      hasFetched.current ||
-      sessions.length > 0
-    ) {
-      return;
-    }
-
-    hasFetched.current = true;
-
-    fetchSessions();
+        fetchSessions();
   }, [token]);
 
   async function fetchSessions() {
@@ -67,9 +48,44 @@ export function useSessions() {
         data
       );
 
-      setSessions(
-        data.sessions || []
-      );
+      // setSessions(
+      //   data.sessions || []
+      // );
+
+
+
+    setSessions((prev) => {
+
+      const incoming =
+        data.sessions || [];
+
+      // current active temp chat
+      const tempSession =
+        prev.find(
+          (session) =>
+            session.session_id ===
+              sessionId &&
+            session.title ===
+              "New Chat"
+        );
+
+      // preserve ONLY active temp chat
+      if (tempSession) {
+        return [
+          tempSession,
+          ...incoming,
+        ];
+      }
+
+      return incoming;
+    });
+
+
+
+
+
+
+
     } catch (error) {
       console.error(
         "Failed loading sessions:",

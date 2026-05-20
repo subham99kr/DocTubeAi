@@ -1,8 +1,8 @@
 services:
   frontend:
-    build: .
+    image: doctubeai-react:v1
 
-    container_name: doctubeai-frontend
+    container_name: doctubeai-react
 
     ports:
       - "5173:5173"
@@ -14,9 +14,4 @@ services:
       - .:/app
       - /app/node_modules
 
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-
-    stdin_open: true
-
-    tty: true
+  

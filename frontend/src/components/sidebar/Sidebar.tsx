@@ -35,6 +35,28 @@ export default function Sidebar({
   const { switchSession } =
     useSessions();
 
+  // useEffect(() => {
+
+  //   // already exists
+  //   if (
+  //     sessions.length > 0
+  //   ) {
+  //     return;
+  //   }
+
+  //   // create initial chat
+  //   setSessions([
+  //     {
+  //       session_id:
+  //         sessionId,
+
+  //       title: "New Chat",
+  //     },
+  //   ]);
+
+  // }, []);
+
+
   function handleNewChat() {
     const currentSession =
       sessions.find(
