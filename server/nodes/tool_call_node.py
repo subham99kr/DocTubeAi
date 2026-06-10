@@ -1,11 +1,22 @@
 import logging
 import re
+from typing import Literal
 
 from langchain_core.messages import HumanMessage
+from pydantic import BaseModel
 
 from state.state import State
 
 logger = logging.getLogger(__name__)
+
+
+class ToolDecision(BaseModel):
+    route: Literal[
+        "vector_search",
+        "internet_search",
+        "web_scraper",
+        "fallback",
+    ]
 
 
 async def tool_call_node(
@@ -47,7 +58,8 @@ async def tool_call_node(
         # =================================================
 
         last_human = next(
-            m for m in reversed(state["messages"])
+            m
+            for m in reversed(state["messages"])
             if isinstance(m, HumanMessage)
         )
 
@@ -69,66 +81,44 @@ async def tool_call_node(
         # MODEL
         # =================================================
 
-        llm = tool_llm_factory()
+        llm = (
+            tool_llm_factory()
+            .with_structured_output(
+                ToolDecision
+            )
+        )
 
         # =================================================
-        # PLANNER PROMPT
+        # PLANNER
         # =================================================
 
         response = await llm.ainvoke([
             {
                 "role": "system",
                 "content": f"""
-                            You are a retrieval planner.
+You are a retrieval planner.
 
-                            Your job is to decide the NEXT BEST retrieval action.
+Choose exactly one route.
 
-                            AVAILABLE RETRIEVAL NODES:
-                            - vector_search
-                            - internet_search
-                            - web_scraper
-                            - fallback
+AVAILABLE ROUTES:
+- vector_search
+- internet_search
+- web_scraper
+- fallback
 
-                            TOOLS DESCRIPTION:
+ALREADY USED TOOLS:
+{used_tools}
 
-                            vector_search:
-                            - uploaded PDFs
-                            - private docs
-                            - transcripts
-                            - user-uploaded knowledge
+SCRATCHPAD:
+{scratchpad}
 
-                            internet_search:
-                            - latest/current information
-                            - external verification
-                            - public web search
-
-                            web_scraper:
-                            - reading a specific URL/webpage
-
-                            fallback:
-                            - retrieval unnecessary
-                            - cannot retrieve anything useful
-
-                            ALREADY USED TOOLS:
-                            {used_tools}
-
-                            SCRATCHPAD:
-                            {scratchpad}
-
-                            IMPORTANT RULES:
-                            1. Do NOT repeatedly call the same tool unless necessary.
-                            2. Prefer vector_search FIRST for uploaded/private knowledge.
-                            3. Use internet_search if vector search was insufficient.
-                            4. Use web_scraper ONLY if a URL is explicitly present.
-                            5. Route to fallback if retrieval is unnecessary.
-                            6. Return ONLY ONE WORD.
-
-                            VALID OUTPUTS:
-                            vector_search
-                            internet_search
-                            web_scraper
-                            fallback
-                            """
+RULES:
+1. Prefer vector_search for uploaded/private knowledge.
+2. Use internet_search for current/public information.
+3. Use web_scraper only when a URL is present.
+4. Use fallback when retrieval is unnecessary.
+5. Avoid repeating tools already used unless absolutely required.
+"""
             },
             {
                 "role": "user",
@@ -136,43 +126,10 @@ async def tool_call_node(
             },
         ])
 
-        # =================================================
-        # CLEAN RESPONSE
-        # =================================================
-
-        decision = response.content.strip().lower()
-
-        decision = re.sub(
-            r"<think>.*?</think>",
-            "",
-            decision,
-            flags=re.DOTALL,
-        ).strip()
+        detected_route = response.route
 
         # =================================================
-        # NORMALIZATION
-        # =================================================
-
-        valid_routes = [
-            "vector_search",
-            "internet_search",
-            "web_scraper",
-            "fallback",
-        ]
-
-        detected_route = None
-
-        for route in valid_routes:
-
-            if route in decision:
-                detected_route = route
-                break
-
-        if detected_route is None:
-            detected_route = "fallback"
-
-        # =================================================
-        # URL EXTRACTION
+        # URL VALIDATION
         # =================================================
 
         if detected_route == "web_scraper":
@@ -191,9 +148,8 @@ async def tool_call_node(
             else:
 
                 logger.warning(
-                    "Planner selected "
-                    "web_scraper but "
-                    "no URL found."
+                    "web_scraper selected "
+                    "but no URL found."
                 )
 
                 detected_route = (
@@ -201,37 +157,31 @@ async def tool_call_node(
                 )
 
         # =================================================
-        # PREVENT SAME TOOL LOOPS
+        # LOOP PREVENTION
         # =================================================
 
-        if (detected_route in used_tools):
+        if detected_route in used_tools:
 
             logger.warning(
-                f"Planner attempted "
-                f"repeated tool: "
+                f"Repeated tool attempt: "
                 f"{detected_route}"
             )
 
             remaining = [
-                "vector_search",
-                "internet_search",
-                "web_scraper",
+                route
+                for route in [
+                    "vector_search",
+                    "internet_search",
+                    "web_scraper",
+                ]
+                if route not in used_tools
             ]
 
-            remaining = [
-                r for r in remaining
-                if r not in used_tools
-            ]
-
-            if remaining:
-
-                detected_route = (
-                    remaining[0]
-                )
-
-            else:
-
-                detected_route = "fallback"
+            detected_route = (
+                remaining[0]
+                if remaining
+                else "fallback"
+            )
 
         # =================================================
         # SAVE ROUTE
