@@ -1,17 +1,15 @@
 services:
   frontend:
-    image: doctubeai-react:v1
+    build:
+      context: .
+      dockerfile: Dockerfile
 
-    container_name: doctubeai-react
-
-    ports:
-      - "5173:5173"
+    container_name: doctubeai-frontend
 
     env_file:
       - .env
 
-    volumes:
-      - .:/app
-      - /app/node_modules
+    ports:
+      - "5173:5173"
 
-  
+    restart: unless-stopped

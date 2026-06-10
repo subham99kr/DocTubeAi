@@ -11,6 +11,11 @@ ENV PIP_NO_CACHE_DIR=1
 WORKDIR /app
 
 # --------------------
+# Copy application code
+# --------------------
+COPY . .
+
+# --------------------
 # System dependencies (OCR + PDF)
 # --------------------
 RUN apt-get update && apt-get install -y \
@@ -36,10 +41,6 @@ RUN pip install --no-cache-dir \
     apt-get purge -y build-essential && \
     apt-get autoremove -y
 
-# --------------------
-# Copy application code
-# --------------------
-COPY . .
 
 # --------------------
 # Expose FastAPI port
