@@ -26,6 +26,11 @@ async def simple_chatbot_node(
     try:
         llm = llm_factory()
 
+        # response_mode = state.get(
+        #     "response_mode",
+        #     "chat",
+        # )
+
         prompt = get_chatbot_prompt()
         chain = prompt | llm
 

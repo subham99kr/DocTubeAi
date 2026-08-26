@@ -52,12 +52,14 @@ _TAVILY_CLIENT = None
 # INITIAL STATE
 # =====================================================
 
-def build_initial_state(query: str):
+def build_initial_state(query: str, response_mode: str = "chat",
+):
 
     return {
         "messages": [HumanMessage(content=query)],
 
         "query": query,
+        "response_mode": response_mode,
         "route": "",
         "tool_steps": 0,
         "retrieval_complete": False,
@@ -302,6 +304,13 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
 
     query = obj.get( "users_query","",)
     session_id = obj.get("session_id")
+
+    if not query.strip() or not session_id:
+        yield{
+            "type": "error",
+            "data": "The query cannot be empty.",
+        }
+        return 
 
     await global_init()
 

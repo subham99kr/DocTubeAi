@@ -57,6 +57,11 @@ async def rag_chatbot_node(
             max_tokens=MAX_OUTPUT_TOKENS
         )
 
+        # response_mode = state.get(
+        #     "response_mode",
+        #     "chat",
+        # )
+
         prompt = get_chatbot_prompt()
 
         chain = prompt | llm

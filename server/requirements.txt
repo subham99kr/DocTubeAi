@@ -40,6 +40,8 @@ pytesseract
 # langdetect
 youtube-transcript-api
 
+faster-whisper
+
 # --- Async file handling ---
 aiofiles
 
@@ -66,3 +68,7 @@ pymongo
 python-multipart
 
 
+
+
+# conda install -c conda-forge ffmpeg
+# pip install edge-tts

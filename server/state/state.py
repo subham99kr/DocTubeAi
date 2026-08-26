@@ -5,6 +5,7 @@ from typing import (
     List,
     Dict,
     Any,
+    Literal,
 )
 
 from langgraph.graph.message import add_messages
@@ -27,6 +28,12 @@ class State(TypedDict):
 
     # Loop protection
     tool_steps: int
+
+
+    # Response / interface mode
+    # =====================================================
+
+    response_mode: Literal["chat","voice"]
 
     # Retrieval completion status
     retrieval_complete: bool

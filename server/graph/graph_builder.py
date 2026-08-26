@@ -11,7 +11,6 @@ from langgraph.checkpoint.base import (
     BaseCheckpointSaver,
 )
 
-
 from state.state import State
 
 from nodes.router_node import router_node
@@ -160,18 +159,25 @@ class RAGGraphBuilder:
 
     def _setup_edges(self):
 
+        # -----------------------------------------
+        # START
+        # -----------------------------------------
+
         self.builder.add_edge(
             START,
             "router",
         )
 
         # -----------------------------------------
-        # Router
+        # MAIN ROUTER
         # -----------------------------------------
 
         self.builder.add_conditional_edges(
             "router",
-            lambda s: s.get("route", "chat"),
+            lambda s: s.get(
+                "route",
+                "chat",
+            ),
             {
                 "chat": "simple_chat",
                 "tools": "tool_call",
@@ -179,7 +185,7 @@ class RAGGraphBuilder:
         )
 
         # -----------------------------------------
-        # Simple chat
+        # SIMPLE CHAT
         # -----------------------------------------
 
         self.builder.add_edge(
@@ -188,14 +194,14 @@ class RAGGraphBuilder:
         )
 
         # -----------------------------------------
-        # Planner routing
+        # TOOL / RAG PLANNER
         # -----------------------------------------
 
         self.builder.add_conditional_edges(
             "tool_call",
             lambda s: s.get(
                 "route",
-                "fallback",
+                "rag",
             ),
             {
                 "vector_search":
@@ -206,46 +212,105 @@ class RAGGraphBuilder:
 
                 "web_scraper":
                     "web_scraper",
-                "rag": 
+
+                # IMPORTANT:
+                # No retrieval required.
+                #
+                # Go directly to RAG chatbot.
+                "rag":
                     "rag_chatbot",
+
+                # Keep this only for backwards
+                # compatibility with old state values.
+                #
+                # Even if some old code writes
+                # "fallback", it must NOT go to
+                # simple_chat.
                 "fallback":
-                    "simple_chat",
+                    "rag_chatbot",
             },
         )
 
         # -----------------------------------------
-        # Retrieval nodes
+        # RETRIEVAL
         # -----------------------------------------
 
-        self.builder.add_edge("vector_search","reranker")
-        self.builder.add_edge("internet_search","reranker")
-        self.builder.add_edge("web_scraper", "reranker")
-        self.builder.add_edge("reranker","retrieval_evaluator")
+        self.builder.add_edge(
+            "vector_search",
+            "reranker",
+        )
 
+        self.builder.add_edge(
+            "internet_search",
+            "reranker",
+        )
+
+        self.builder.add_edge(
+            "web_scraper",
+            "reranker",
+        )
+
+        self.builder.add_edge(
+            "reranker",
+            "retrieval_evaluator",
+        )
+
+        # -----------------------------------------
+        # RETRIEVAL EVALUATOR
+        # -----------------------------------------
 
         self.builder.add_conditional_edges(
             "retrieval_evaluator",
-            lambda s: s.get("route","fallback"),
+            lambda s: s.get(
+                "route",
+                "rag",
+            ),
             {
-                "tools": "tool_call",
-                "rag": "rag_chatbot",
-                "fallback": "simple_chat",
+                # Retrieval is insufficient and another
+                # tool may be needed.
+                "tools":
+                    "tool_call",
+
+                # Retrieval is useful OR no retrieval
+                # is needed anymore.
+                "rag":
+                    "rag_chatbot",
+
+                # IMPORTANT:
+                # Even evaluator fallback should use
+                # rag_chatbot because RAG can answer
+                # without retrieved tools.
+                "fallback":
+                    "rag_chatbot",
             },
         )
 
         # -----------------------------------------
-        # Final answer
+        # FINAL ANSWER
         # -----------------------------------------
 
-        self.builder.add_edge("rag_chatbot","prune")
-        self.builder.add_edge( "prune", END)
+        self.builder.add_edge(
+            "rag_chatbot",
+            "prune",
+        )
+
+        self.builder.add_edge(
+            "prune",
+            END,
+        )
 
     # =====================================================
     # COMPILE
     # =====================================================
 
-    def compile(self, checkpointer: BaseCheckpointSaver = None):
+    def compile(
+        self,
+        checkpointer: BaseCheckpointSaver = None,
+    ):
+
         self._setup_nodes()
         self._setup_edges()
 
-        return self.builder.compile(checkpointer=checkpointer)
+        return self.builder.compile(
+            checkpointer=checkpointer
+        )

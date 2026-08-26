@@ -1,8 +1,8 @@
 services:
   server:
     build: .
-    image: doctubeai-server:latest
-    container_name: doctubeai-server
+    image: doctubeai-backend
+    container_name: doctubeai-backend
 
     ports:
       - "8000:8000"

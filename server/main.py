@@ -6,6 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from logger import logger
 from global_modules.pg_pool import get_pg_pool,close_pg_pool
 from contextlib import asynccontextmanager
+from api.voice_router import router as voice_router
+from api.voice_ws_router import router as voice_ws_router
+
+
+
+
+
 
 # routers
 from api.chatting_router import router as chatting_router
@@ -30,6 +37,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="DocTubeAI Server", version="1.0.0",lifespan=lifespan)
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -44,6 +52,8 @@ app.include_router(load_chats_router)
 app.include_router(home_router)
 app.include_router(transcripts_router)
 app.include_router(upload_router)
+app.include_router(voice_router)
+app.include_router(voice_ws_router)
 
 @app.middleware("http")
 async def catch_exception_middleware(request: Request, call_next):

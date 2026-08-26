@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 # --------------------
-# System environment
+# Environment
 # --------------------
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -11,12 +11,7 @@ ENV PIP_NO_CACHE_DIR=1
 WORKDIR /app
 
 # --------------------
-# Copy application code
-# --------------------
-COPY . .
-
-# --------------------
-# System dependencies (OCR + PDF)
+# System dependencies
 # --------------------
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
@@ -25,29 +20,36 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-
 # --------------------
-# Install remaining Python deps
+# Python dependencies
 # --------------------
 COPY requirements.txt .
-RUN pip install --no-cache-dir \
-        torch --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir \
-        transformers==4.38.2 \
-        scikit-learn \
-        scipy \
-        numpy && \
-    pip install --no-cache-dir -r requirements.txt && \
-    apt-get purge -y build-essential && \
-    apt-get autoremove -y
 
+# CPU-only PyTorch
+RUN pip install --no-cache-dir \
+    torch --index-url https://download.pytorch.org/whl/cpu
+
+RUN pip install --no-cache-dir \
+    transformers==4.38.2 \
+    scikit-learn \
+    scipy \
+    numpy
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Remove compiler after packages are built
+RUN apt-get purge -y build-essential \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 # --------------------
-# Expose FastAPI port
+# Application
+# --------------------
+COPY . .
+
+# --------------------
+# Hugging Face Spaces
 # --------------------
 EXPOSE 8000
 
-# --------------------
-# Run server
-# --------------------
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
