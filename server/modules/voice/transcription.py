@@ -2,7 +2,7 @@
 Faster-Whisper transcription service.
 
 Responsibilities:
-    - Own the Faster-Whisper model.
+    - Own the shared Faster-Whisper model.
     - Run blocking inference outside asyncio.
     - Apply Whisper's internal VAD as a secondary safeguard.
     - Convert Whisper output into TranscriptionResult.
@@ -47,11 +47,72 @@ from modules.voice.models import TranscriptionResult
 logger = logging.getLogger(__name__)
 
 
+# ============================================================
+# SHARED WHISPER MODEL
+# ============================================================
+
+# One Whisper model per Python process.
+#
+# Multiple voice sessions/transcribers will share this model.
+_whisper_model: Optional[WhisperModel] = None
+
+# Prevent multiple sessions from loading the model
+# simultaneously when they start at the same time.
+_whisper_model_lock = asyncio.Lock()
+
+
+async def get_whisper_model() -> WhisperModel:
+    """
+    Return the shared Faster-Whisper model.
+
+    The model is loaded only once per Python process.
+    """
+
+    global _whisper_model
+
+    # Fast path:
+    # Model has already been loaded.
+    if _whisper_model is not None:
+        return _whisper_model
+
+    # Only one coroutine can initialize the model.
+    async with _whisper_model_lock:
+
+        # Double-check after acquiring the lock.
+        #
+        # Another coroutine may have loaded the model
+        # while this coroutine was waiting for the lock.
+        if _whisper_model is not None:
+            return _whisper_model
+
+        logger.info(
+            "Loading Faster-Whisper model "
+            "model=%s device=%s compute_type=%s",
+            WHISPER_MODEL,
+            WHISPER_DEVICE,
+            WHISPER_COMPUTE_TYPE,
+        )
+
+        _whisper_model = await asyncio.to_thread(
+            WhisperModel,
+            WHISPER_MODEL,
+            device=WHISPER_DEVICE,
+            compute_type=WHISPER_COMPUTE_TYPE,
+        )
+
+        logger.info(
+            "Faster-Whisper model loaded."
+        )
+
+        return _whisper_model
+
+
 class WhisperTranscriber:
     """
     Async lifecycle wrapper around Faster-Whisper.
 
-    The Whisper model is loaded when start() is called.
+    Each voice session gets its own WhisperTranscriber,
+    but all transcribers share the same WhisperModel.
 
     Blocking inference is always executed outside the
     asyncio event loop.
@@ -87,7 +148,9 @@ class WhisperTranscriber:
 
     async def start(self) -> None:
         """
-        Initialize the Whisper model.
+        Initialize this transcriber.
+
+        The underlying WhisperModel is shared globally.
 
         Calling start() multiple times is safe.
         """
@@ -102,26 +165,11 @@ class WhisperTranscriber:
             if self._started:
                 return
 
-            if self.model is None:
-
-                logger.info(
-                    "Loading Faster-Whisper model "
-                    "model=%s device=%s compute_type=%s",
-                    WHISPER_MODEL,
-                    WHISPER_DEVICE,
-                    WHISPER_COMPUTE_TYPE,
-                )
-
-                self.model = await asyncio.to_thread(
-                    WhisperModel,
-                    WHISPER_MODEL,
-                    device=WHISPER_DEVICE,
-                    compute_type=WHISPER_COMPUTE_TYPE,
-                )
-
-                logger.info(
-                    "Faster-Whisper model loaded."
-                )
+            # Get the shared Whisper model.
+            #
+            # This loads the model only if it has not
+            # already been loaded by another session.
+            self.model = await get_whisper_model()
 
             self._started = True
 
@@ -131,7 +179,14 @@ class WhisperTranscriber:
 
     async def close(self) -> None:
         """
-        Close the transcriber.
+        Close this transcriber.
+
+        IMPORTANT:
+            Closing a transcriber does NOT unload the
+            shared WhisperModel.
+
+        The model remains alive so other voice sessions
+        can continue using it.
 
         Safe to call multiple times.
         """
@@ -144,7 +199,12 @@ class WhisperTranscriber:
             self._closed = True
             self._started = False
 
-            self.model = None
+            # Do NOT set self.model = None here.
+            #
+            # The underlying WhisperModel is shared by
+            # multiple transcribers.
+            #
+            # We simply close this session's wrapper.
 
     # ========================================================
     # Transcribe PCM
@@ -367,7 +427,10 @@ def whisper_transcriber() -> WhisperTranscriber:
     """
     Create a new WhisperTranscriber.
 
-    The model is loaded only after:
+    The transcriber itself is session-scoped.
+
+    The underlying WhisperModel is shared across all
+    transcribers and loaded lazily on the first call to:
 
         await transcriber.start()
     """
