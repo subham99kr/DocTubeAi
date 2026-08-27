@@ -156,7 +156,7 @@ export default function VoiceMode({
 
   const getWebSocketUrl = useCallback(() => {
     const base = (
-      import.meta.env.VITE_API_BASE_URL ||
+      import.meta.env.VITE_BACKEND_URL ||
       "http://127.0.0.1:8000"
     )
       .trim()
@@ -164,7 +164,7 @@ export default function VoiceMode({
 
     if (!base) {
       throw new Error(
-        "VITE_API_BASE_URL is not configured.",
+        "VITE_BACKEND_URL is not configured.",
       );
     }
 

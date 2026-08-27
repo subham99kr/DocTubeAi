@@ -6,7 +6,6 @@ import {
 
 import type { ReactNode } from "react";
 
-// IMPORT SHARED MESSAGE TYPE
 import type { Message }
 from "../types/chat.types";
 
@@ -46,14 +45,12 @@ type ChatContextType = {
     React.SetStateAction<string[]>
   >;
 
-  // SESSIONS
   sessions: Session[];
 
   setSessions: React.Dispatch<
     React.SetStateAction<Session[]>
   >;
 
-  // STREAM STATUS
   status: string;
 
   setStatus: React.Dispatch<
@@ -74,28 +71,21 @@ function generateSessionId(): string {
   return crypto.randomUUID();
 }
 
-// INITIAL CHAT
-const initialSessionId =
-  generateSessionId();
-
-const initialSession: Session = {
-  session_id:
-    initialSessionId,
-
-  title: "New Chat",
-};
-
 export function ChatProvider({
   children,
 }: Props) {
+
+  /*
+   * Generate the initial session only once
+   * when the provider is created.
+   */
+  const [sessionId, setSessionId] =
+    useState<string>(() =>
+      generateSessionId()
+    );
+
   const [messages, setMessages] =
     useState<Message[]>([]);
-
-  // ACTIVE SESSION
-  const [sessionId, setSessionId] =
-    useState(
-      initialSessionId
-    );
 
   const [loading, setLoading] =
     useState(false);
@@ -106,17 +96,20 @@ export function ChatProvider({
   ] = useState<string[]>([]);
 
   const [urls, setUrls] =
-    useState<string[]>(
-      []
-    );
+    useState<string[]>([]);
 
-  // SESSION LIST STARTS WITH NEW CHAT
+  /*
+   * Session list starts with the
+   * temporary "New Chat".
+   */
   const [sessions, setSessions] =
-    useState<Session[]>([
-      initialSession,
+    useState<Session[]>(() => [
+      {
+        session_id: sessionId,
+        title: "New Chat",
+      },
     ]);
 
-  // STREAM STATUS
   const [status, setStatus] =
     useState("");
 

@@ -1,7 +1,7 @@
 services:
   server:
     build: .
-    image: doctubeai-backend
+    image: doctubeai-backend:latest
     container_name: doctubeai-backend
 
     ports:

@@ -1,12 +1,16 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import UserProfile from "./UserProfile";
 
 import SessionList from "./SessionList";
 
 import { useChat } from "../../context/ChatContext";
-
-import { useSessions } from "../../hooks/useSessions";
 
 type Props = {
   closeMobileSidebar?: () => void;
@@ -15,8 +19,12 @@ type Props = {
 export default function Sidebar({
   closeMobileSidebar,
 }: Props) {
+
   const [collapsed, setCollapsed] =
     useState(false);
+
+  const navigate =
+    useNavigate();
 
   const {
     sessionId,
@@ -32,32 +40,14 @@ export default function Sidebar({
     setSessions,
   } = useChat();
 
-  const { switchSession } =
-    useSessions();
-
-  // useEffect(() => {
-
-  //   // already exists
-  //   if (
-  //     sessions.length > 0
-  //   ) {
-  //     return;
-  //   }
-
-  //   // create initial chat
-  //   setSessions([
-  //     {
-  //       session_id:
-  //         sessionId,
-
-  //       title: "New Chat",
-  //     },
-  //   ]);
-
-  // }, []);
-
+  /*
+   * =========================================================
+   * NEW CHAT
+   * =========================================================
+   */
 
   function handleNewChat() {
+
     const currentSession =
       sessions.find(
         (s) =>
@@ -65,6 +55,11 @@ export default function Sidebar({
           sessionId
       );
 
+    /*
+     * If the current session is already
+     * an empty New Chat then there is
+     * nothing to create.
+     */
     const isTemporaryEmptyChat =
       currentSession?.title ===
         "New Chat" &&
@@ -74,24 +69,55 @@ export default function Sidebar({
       return;
     }
 
+    /*
+     * Generate a completely new session.
+     */
     const newSessionId =
       crypto.randomUUID();
 
+    /*
+     * Add it to sidebar immediately.
+     */
     setSessions((prev) => [
       {
-        session_id: newSessionId,
-        title: "New Chat",
+        session_id:
+          newSessionId,
+
+        title:
+          "New Chat",
       },
+
       ...prev,
     ]);
 
-    setSessionId(newSessionId);
+    /*
+     * Update active session.
+     */
+    setSessionId(
+      newSessionId
+    );
 
+    /*
+     * Clear current chat.
+     */
     setMessages([]);
 
     setUploadedPdfs([]);
 
     setUrls([]);
+
+    /*
+     * IMPORTANT:
+     *
+     * URL becomes:
+     *
+     * /chats/history/<newSessionId>
+     *
+     * No API call here.
+     */
+    navigate(
+      `/chats/history/${newSessionId}`
+    );
   }
 
   return (
@@ -102,15 +128,24 @@ export default function Sidebar({
           : "w-[280px] sm:w-[300px]"
       }`}
     >
+
+      {/* ================================================= */}
+      {/* HEADER */}
+      {/* ================================================= */}
+
       <div className="p-4 border-b border-[#30363d]">
+
         <div className="flex items-center justify-between">
+
           <div className="flex items-center gap-3 min-w-0">
+
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-xl shadow-lg shrink-0">
               🤖
             </div>
 
             {!collapsed && (
               <div className="min-w-0">
+
                 <h2 className="font-bold text-white text-lg truncate">
                   DocTubeAI
                 </h2>
@@ -118,21 +153,30 @@ export default function Sidebar({
                 <p className="text-xs text-gray-400 truncate">
                   AI Assistant
                 </p>
+
               </div>
             )}
+
           </div>
 
           <button
             onClick={() => {
-              // Mobile / tablet
+
+              /*
+               * Mobile / tablet
+               */
               if (
                 window.innerWidth < 1024
               ) {
+
                 closeMobileSidebar?.();
+
                 return;
               }
 
-              // Desktop
+              /*
+               * Desktop
+               */
               setCollapsed(
                 !collapsed
               );
@@ -143,39 +187,75 @@ export default function Sidebar({
               ? "➡"
               : "⬅"}
           </button>
+
         </div>
 
         {!collapsed && (
           <>
+
             <div className="mt-4">
               <UserProfile />
             </div>
 
             <button
-              onClick={handleNewChat}
+              onClick={
+                handleNewChat
+              }
               className="mt-4 w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               + New Chat
             </button>
+
           </>
         )}
+
       </div>
 
+      {/* ================================================= */}
+      {/* SESSION LIST */}
+      {/* ================================================= */}
+
       {!collapsed && (
+
         <div className="flex-1 overflow-y-auto p-3">
+
           <SessionList
-            sessions={sessions}
+            sessions={
+              sessions
+            }
+
             activeSessionId={
               sessionId
             }
+
             onSelect={(id) => {
-              switchSession(id);
+
+              /*
+               * IMPORTANT:
+               *
+               * Do NOT call:
+               *
+               * switchSession(id)
+               *
+               * here.
+               *
+               * Only change the URL.
+               *
+               * useSessions() watches the URL
+               * and loads the history.
+               */
+              navigate(
+                `/chats/history/${id}`
+              );
 
               closeMobileSidebar?.();
             }}
           />
+
         </div>
+
       )}
+
     </div>
   );
 }

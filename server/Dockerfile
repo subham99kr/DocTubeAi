@@ -16,6 +16,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     poppler-utils \
+    ffmpeg \
     libgl1 \
     build-essential \
     && rm -rf /var/lib/apt/lists/*

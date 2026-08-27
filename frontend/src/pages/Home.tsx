@@ -5,6 +5,7 @@ import {
 import {
   useSearchParams,
   useParams,
+  useNavigate,
 } from "react-router-dom";
 
 import MainLayout from "../layouts/MainLayout";
@@ -21,46 +22,102 @@ import { exchangeCodeForToken } from "../api/authApi";
 
 import { useAuth } from "../context/AuthContext";
 
-import { useChat as useChatContext }
-from "../context/ChatContext";
+import {
+  useChat as useChatContext,
+} from "../context/ChatContext";
 
 import { useSessions } from "../hooks/useSessions";
 
 export default function Home() {
+
   const {
     sendMessage,
     loading,
   } = useChat();
 
-  const { login } = useAuth();
+  const { login } =
+    useAuth();
 
-  const { status } =
-    useChatContext();
+  const {
+    status,
+    sessionId: currentSessionId,
+  } = useChatContext();
 
   const {
     switchSession,
   } = useSessions();
 
-  const [searchParams] =
-    useSearchParams();
+  const [
+    searchParams,
+  ] = useSearchParams();
 
-  const { sessionId } =
-    useParams();
+  const {
+    sessionId,
+  } = useParams();
 
-  // LOAD CHAT FROM URL
+  const navigate =
+    useNavigate();
+
+
+  // =====================================================
+  // INITIAL URL
+  // =====================================================
+  // If user opens "/"
+  // redirect to the already-created session.
+  //
+  // Do NOT generate another session ID here.
+  // =====================================================
+
   useEffect(() => {
+
+    if (
+      !sessionId &&
+      currentSessionId
+    ) {
+      navigate(
+        `/chats/history/${currentSessionId}`,
+        {
+          replace: true,
+        }
+      );
+    }
+
+  }, [
+    sessionId,
+    currentSessionId,
+    navigate,
+  ]);
+
+
+  // =====================================================
+  // LOAD CHAT FROM URL
+  // =====================================================
+
+  useEffect(() => {
+
     if (sessionId) {
+
       switchSession(
         sessionId
       );
+
     }
+
   }, [sessionId]);
 
-  // Handle OAuth redirect
+
+  // =====================================================
+  // HANDLE OAUTH REDIRECT
+  // =====================================================
+
   useEffect(() => {
+
     async function authenticate() {
+
       const code =
-        searchParams.get("code");
+        searchParams.get(
+          "code"
+        );
 
       const authProcessed =
         sessionStorage.getItem(
@@ -80,6 +137,7 @@ export default function Home() {
       );
 
       try {
+
         const data =
           await exchangeCodeForToken(
             code
@@ -98,7 +156,9 @@ export default function Home() {
           document.title,
           cleanUrl
         );
+
       } catch (error) {
+
         console.error(
           "OAuth Failed:",
           error
@@ -111,15 +171,26 @@ export default function Home() {
     }
 
     authenticate();
+
   }, []);
+
+
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
     <MainLayout>
+
       <div className="h-full flex flex-col bg-[#0e1117] text-white min-h-0 relative overflow-hidden">
+
         <AnimatedBackground />
 
+
         {/* Header */}
+
         <div className="border-b border-[#30363d]/60 backdrop-blur-md bg-black/10 p-4 shrink-0 relative z-10">
+
           <h1 className="text-xl sm:text-2xl font-bold truncate">
             DocTubeAI
           </h1>
@@ -127,28 +198,45 @@ export default function Home() {
           <p className="text-xs sm:text-sm text-gray-400 mt-1">
             Multi-source AI RAG Assistant
           </p>
+
         </div>
+
 
         {/* Chat Window */}
+
         <div className="flex-1 overflow-hidden min-h-0 relative z-10">
+
           <ChatWindow />
+
         </div>
 
+
         {/* Status */}
+
         {status && (
+
           <div className="px-4 py-2 text-xs text-cyan-300 relative z-10 backdrop-blur-sm bg-black/10 border-t border-white/5">
+
             ✨ {status}
+
           </div>
+
         )}
 
+
         {/* Chat Input */}
+
         <div className="shrink-0 relative z-10">
+
           <ChatInput
             onSend={sendMessage}
             disabled={loading}
           />
+
         </div>
+
       </div>
+
     </MainLayout>
   );
 }
