@@ -460,16 +460,16 @@ export default function VoiceMode({
         chunk.bytes,
       );
 
-      console.info(
-        "[Voice][Audio] APPEND stream chunk",
-        {
-          turnId: chunk.turnId,
-          chunkId: chunk.chunkId,
-          bytes: chunk.bytes.byteLength,
-          queueRemaining:
-            audioChunkQueueRef.current.length,
-        },
-      );
+      // console.info(
+      //   "[Voice][Audio] APPEND stream chunk",
+      //   {
+      //     turnId: chunk.turnId,
+      //     chunkId: chunk.chunkId,
+      //     bytes: chunk.bytes.byteLength,
+      //     queueRemaining:
+      //       audioChunkQueueRef.current.length,
+      //   },
+      // );
     } catch (err) {
       audioAppendingRef.current = false;
 
@@ -578,12 +578,12 @@ export default function VoiceMode({
       streamAudioRef.current = audio;
 
       audio.onended = () => {
-        console.info(
-          "[Voice][Audio] COMPLETE stream playback",
-          {
-            turnId,
-          },
-        );
+        // console.info(
+        //   "[Voice][Audio] COMPLETE stream playback",
+        //   {
+        //     turnId,
+        //   },
+        // );
 
         assistantSpeakingRef.current =
           false;
@@ -627,13 +627,13 @@ export default function VoiceMode({
           return;
         }
 
-        console.info(
-          "[Voice][Audio] START continuous stream",
-          {
-            turnId,
-            mimeType: normalizedMime,
-          },
-        );
+        // console.info(
+        //   "[Voice][Audio] START continuous stream",
+        //   {
+        //     turnId,
+        //     mimeType: normalizedMime,
+        //   },
+        // );
 
         audioSourceOpenedRef.current =
           true;
@@ -800,14 +800,14 @@ export default function VoiceMode({
           activeAssistantTurnIdRef.current !==
           event.turn_id
         ) {
-          console.warn(
-            "[Voice][Audio] Ignoring stale audio",
-            {
-              eventTurn: event.turn_id,
-              activeTurn:
-                activeAssistantTurnIdRef.current,
-            },
-          );
+          // console.warn(
+          //   "[Voice][Audio] Ignoring stale audio",
+          //   {
+          //     eventTurn: event.turn_id,
+          //     activeTurn:
+          //       activeAssistantTurnIdRef.current,
+          //   },
+          // );
 
           return;
         }
@@ -848,19 +848,19 @@ export default function VoiceMode({
             chunk,
           );
 
-          console.info(
-            "[Voice][Audio] QUEUED stream chunk",
-            {
-              turnId: chunk.turnId,
-              chunkId: chunk.chunkId,
-              bytes: chunk.bytes.byteLength,
-              queueLength:
-                audioChunkQueueRef.current
-                  .length,
-              appending:
-                audioAppendingRef.current,
-            },
-          );
+          // console.info(
+          //   "[Voice][Audio] QUEUED stream chunk",
+          //   {
+          //     turnId: chunk.turnId,
+          //     chunkId: chunk.chunkId,
+          //     bytes: chunk.bytes.byteLength,
+          //     queueLength:
+          //       audioChunkQueueRef.current
+          //         .length,
+          //     appending:
+          //       audioAppendingRef.current,
+          //   },
+          // );
 
           /*
            * If SourceBuffer is already available,
@@ -2131,7 +2131,7 @@ export default function VoiceMode({
           )}
         </div>
 
-        {transcript && (
+        {/* {transcript && (
           <div className="mt-5 w-full max-w-2xl rounded-2xl border border-[#30363d] bg-[#161b22] px-6 py-5">
             <p className="mb-3 text-xs text-gray-500">
               Latest user turn
@@ -2141,7 +2141,7 @@ export default function VoiceMode({
               {transcript}
             </p>
           </div>
-        )}
+        )} */}
 
         {assistantResponse && (
           <div className="mt-5 w-full max-w-2xl rounded-2xl border border-[#30363d] bg-[#161b22] px-6 py-5">
