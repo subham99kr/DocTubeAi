@@ -1,7 +1,8 @@
 import logging
-from typing import List, Dict
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from typing import Dict, List
+
 from global_modules.pg_pool import get_pg_pool
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 logger = logging.getLogger(__name__)
 

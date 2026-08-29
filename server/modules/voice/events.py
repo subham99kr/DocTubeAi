@@ -41,10 +41,10 @@ from __future__ import annotations
 import base64
 from typing import Any, Optional
 
-
 # ============================================================
 # Generic event builder
 # ============================================================
+
 
 def event(
     event_type: str,
@@ -89,6 +89,7 @@ def event(
 # Connection / session
 # ============================================================
 
+
 def connected() -> dict:
     """
     Notify the frontend that the WebSocket connection
@@ -123,6 +124,7 @@ def session_ended() -> dict:
 # ============================================================
 # User speech
 # ============================================================
+
 
 def user_speech_started(
     turn_id: int,
@@ -203,6 +205,7 @@ def user_turn_complete(
 # ============================================================
 # Assistant lifecycle
 # ============================================================
+
 
 def assistant_started(
     turn_id: int,
@@ -320,9 +323,7 @@ def assistant_audio(
             mime_type=mime_type,
         )
 
-    encoded_audio = base64.b64encode(
-        audio
-    ).decode("ascii")
+    encoded_audio = base64.b64encode(audio).decode("ascii")
 
     return event(
         "assistant_audio",
@@ -380,6 +381,7 @@ def assistant_error(
 # Interruption
 # ============================================================
 
+
 def interrupted(
     turn_id: int,
 ) -> dict:
@@ -409,6 +411,7 @@ def interrupted(
 # ============================================================
 # General error
 # ============================================================
+
 
 def error(
     message: str,
@@ -442,6 +445,7 @@ def error(
 # ============================================================
 # Server information
 # ============================================================
+
 
 def server_info(
     message: str,

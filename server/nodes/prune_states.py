@@ -1,5 +1,6 @@
 from state.state import State
 
+
 async def prune_state_node(
     state: State,
 ) -> State:

@@ -63,10 +63,7 @@ class AudioWriter:
     ) -> None:
 
         if sample_rate <= 0:
-
-            raise ValueError(
-                "sample_rate must be greater than zero."
-            )
+            raise ValueError("sample_rate must be greater than zero.")
 
         self.sample_rate = sample_rate
 
@@ -90,10 +87,7 @@ class AudioWriter:
         """
 
         if not pcm_audio:
-
-            raise ValueError(
-                "Cannot write empty audio."
-            )
+            raise ValueError("Cannot write empty audio.")
 
         return await asyncio.to_thread(
             self._write,
@@ -124,12 +118,10 @@ class AudioWriter:
         temp_file.close()
 
         try:
-
             with wave.open(
                 path,
                 "wb",
             ) as wav_file:
-
                 # ------------------------------------------------
                 # PCM16 = 2 bytes per sample.
                 # ------------------------------------------------
@@ -138,18 +130,13 @@ class AudioWriter:
 
                 wav_file.setsampwidth(2)
 
-                wav_file.setframerate(
-                    self.sample_rate
-                )
+                wav_file.setframerate(self.sample_rate)
 
-                wav_file.writeframes(
-                    pcm_audio
-                )
+                wav_file.writeframes(pcm_audio)
 
             return path
 
         except Exception:
-
             self.delete(path)
 
             raise
@@ -174,17 +161,12 @@ class AudioWriter:
             return
 
         try:
-
-            os.remove(
-                audio_path
-            )
+            os.remove(audio_path)
 
         except FileNotFoundError:
-
             pass
 
         except OSError:
-
             # ------------------------------------------------
             # Cleanup failure must not crash the voice
             # pipeline.
@@ -205,6 +187,4 @@ def create_audio_writer(
     Create the standard voice-pipeline audio writer.
     """
 
-    return AudioWriter(
-        sample_rate=sample_rate
-    )
+    return AudioWriter(sample_rate=sample_rate)

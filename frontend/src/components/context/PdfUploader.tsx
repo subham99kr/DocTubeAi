@@ -7,20 +7,13 @@ import { useChat } from "../../context/ChatContext";
 import { useAuth } from "../../context/AuthContext";
 
 export default function PdfUploader() {
-  const inputRef =
-    useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const {
-    sessionId,
-    uploadedPdfs,
-    setUploadedPdfs,
-  } = useChat();
+  const { sessionId, uploadedPdfs, setUploadedPdfs } = useChat();
 
   const { token } = useAuth();
 
-  async function handleUpload(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
 
     if (!files || files.length === 0) {
@@ -31,16 +24,12 @@ export default function PdfUploader() {
       const response = await uploadPdfs(
         Array.from(files),
         sessionId,
-        token || undefined
+        token || undefined,
       );
 
-      const filenames =
-        response.filenames || [];
+      const filenames = response.filenames || [];
 
-      setUploadedPdfs([
-        ...uploadedPdfs,
-        ...filenames,
-      ]);
+      setUploadedPdfs([...uploadedPdfs, ...filenames]);
 
       if (inputRef.current) {
         inputRef.current.value = "";

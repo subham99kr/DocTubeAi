@@ -1,5 +1,7 @@
 import re
+
 from bs4 import BeautifulSoup
+
 
 async def run_web_scrape(url: str, http_client) -> str:
     """

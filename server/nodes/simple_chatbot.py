@@ -1,7 +1,7 @@
 import logging
 
-from state.state import State
 from modules.llm import get_chatbot_prompt
+from state.state import State
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,11 @@ async def simple_chatbot_node(
 
         recent_messages = state.get("messages", [])[-8:]
 
-        response = await chain.ainvoke({
-            "messages": recent_messages,
-        })
+        response = await chain.ainvoke(
+            {
+                "messages": recent_messages,
+            }
+        )
 
         state["messages"].append(response)
         state["route"] = "end"

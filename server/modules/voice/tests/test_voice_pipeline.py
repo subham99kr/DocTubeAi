@@ -25,19 +25,15 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-
 from modules.voice.models import (
     TranscriptionResult,
     TurnCompleted,
 )
-
 from modules.voice.pipeline import VoicePipeline
-
 from modules.voice.vad import (
     VADEvent,
     VADEventType,
 )
-
 
 # ============================================================
 # Fake components

@@ -2,13 +2,11 @@
 import os
 
 import pytest
-
 from modules.voice.audio_buffer import AudioBuffer
 from modules.voice.config import (
     MAX_AUDIO_BYTES,
     MIN_AUDIO_BYTES,
 )
-
 
 # ============================================================
 # Helpers

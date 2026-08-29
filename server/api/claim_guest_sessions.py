@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
 from typing import List
-from pydantic import BaseModel
-from global_modules.pg_pool import get_pg_pool
+
 from auth.dependencies import get_current_user_optional
+from fastapi import APIRouter, Depends, HTTPException
+from global_modules.pg_pool import get_pg_pool
+from pydantic import BaseModel
 
 router = APIRouter(tags=["Auth Cleanup"])
 

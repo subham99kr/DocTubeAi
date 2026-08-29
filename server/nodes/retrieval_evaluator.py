@@ -1,4 +1,3 @@
-# retrieval_evaluator.py
 
 from state.state import State
 
@@ -30,19 +29,15 @@ async def retrieval_evaluator_node(
     # =================================================
 
     if not chunks:
-
         # Try another tool if possible
 
         if "vector_search" not in used_tools:
-
             state["route"] = "tools"
 
         elif "internet_search" not in used_tools:
-
             state["route"] = "tools"
 
         else:
-
             state["route"] = "fallback"
 
         return state
@@ -61,7 +56,6 @@ async def retrieval_evaluator_node(
     # =================================================
 
     if best_score >= 0.45:
-
         state["retrieval_complete"] = True
 
         state["route"] = "rag"
@@ -75,30 +69,22 @@ async def retrieval_evaluator_node(
     remaining_tools = []
 
     if "vector_search" not in used_tools:
-        remaining_tools.append(
-            "vector_search"
-        )
+        remaining_tools.append("vector_search")
 
     if "internet_search" not in used_tools:
-        remaining_tools.append(
-            "internet_search"
-        )
+        remaining_tools.append("internet_search")
 
     if "web_scraper" not in used_tools:
-        remaining_tools.append(
-            "web_scraper"
-        )
+        remaining_tools.append("web_scraper")
 
     # =================================================
     # MORE RETRIEVAL AVAILABLE
     # =================================================
 
     if remaining_tools:
-
         state["route"] = "tools"
 
     else:
-
         # No more retrieval sources left
         # Use best available evidence
 

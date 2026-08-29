@@ -1,6 +1,7 @@
 # we just need to run this code once to setup all the tables required for checkpoints. 
 
 import os
+
 from dotenv import load_dotenv
 from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg import connect

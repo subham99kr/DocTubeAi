@@ -62,7 +62,6 @@ import logging
 import time
 from typing import Awaitable, Callable, Optional
 
-
 from .audio_decoder import AudioDecoder
 from .config import (
     INTERRUPTION_ENABLED,
@@ -91,7 +90,6 @@ from .vad import (
     VoiceActivityDetector,
     create_vad,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +148,7 @@ AssistantErrorCallback = Callable[
 # Voice Pipeline
 # ============================================================
 
+
 class VoicePipeline:
     """
     Coordinates the complete voice interaction lifecycle.
@@ -188,57 +187,25 @@ class VoicePipeline:
     def __init__(
         self,
         session_id: str,
-        transcriber: Optional[
-            WhisperTranscriber
-        ] = None,
-        turn_detector: Optional[
-            TurnDetector
-        ] = None,
-        graph_runner: Optional[
-            VoiceGraphRunner
-        ] = None,
-        decoder: Optional[
-            AudioDecoder
-        ] = None,
-        vad: Optional[
-            VoiceActivityDetector
-        ] = None,
-        synthesizer: Optional[
-            SpeechSynthesizer
-        ] = None,
-        on_speech_started: Optional[
-            SpeechStartedCallback
-        ] = None,
-        on_transcript_changed: Optional[
-            TranscriptChangedCallback
-        ] = None,
-        on_turn_complete: Optional[
-            TurnCompletedCallback
-        ] = None,
-        on_assistant_started: Optional[
-            AssistantStartedCallback
-        ] = None,
-        on_assistant_status: Optional[
-            AssistantStatusCallback
-        ] = None,
-        on_assistant_text: Optional[
-            AssistantTextCallback
-        ] = None,
-        on_assistant_audio: Optional[
-            AssistantAudioCallback
-        ] = None,
-        on_assistant_completed: Optional[
-            AssistantCompletedCallback
-        ] = None,
-        on_assistant_error: Optional[
-            AssistantErrorCallback
-        ] = None,
+        transcriber: Optional[WhisperTranscriber] = None,
+        turn_detector: Optional[TurnDetector] = None,
+        graph_runner: Optional[VoiceGraphRunner] = None,
+        decoder: Optional[AudioDecoder] = None,
+        vad: Optional[VoiceActivityDetector] = None,
+        synthesizer: Optional[SpeechSynthesizer] = None,
+        on_speech_started: Optional[SpeechStartedCallback] = None,
+        on_transcript_changed: Optional[TranscriptChangedCallback] = None,
+        on_turn_complete: Optional[TurnCompletedCallback] = None,
+        on_assistant_started: Optional[AssistantStartedCallback] = None,
+        on_assistant_status: Optional[AssistantStatusCallback] = None,
+        on_assistant_text: Optional[AssistantTextCallback] = None,
+        on_assistant_audio: Optional[AssistantAudioCallback] = None,
+        on_assistant_completed: Optional[AssistantCompletedCallback] = None,
+        on_assistant_error: Optional[AssistantErrorCallback] = None,
     ) -> None:
 
         if not session_id:
-            raise ValueError(
-                "session_id must not be empty."
-            )
+            raise ValueError("session_id must not be empty.")
 
         # ----------------------------------------------------
         # Pipeline lifetime clock.
@@ -271,51 +238,27 @@ class VoicePipeline:
         decoder_injected = decoder is not None
         vad_injected = vad is not None
         transcriber_injected = transcriber is not None
-        turn_detector_injected = (
-            turn_detector is not None
-        )
-        graph_runner_injected = (
-            graph_runner is not None
-        )
-        synthesizer_injected = (
-            synthesizer is not None
+        turn_detector_injected = turn_detector is not None
+        graph_runner_injected = graph_runner is not None
+        synthesizer_injected = synthesizer is not None
+
+        self.decoder = decoder or AudioDecoder(
+            sample_rate=16000,
+            frame_duration_ms=20,
         )
 
-        self.decoder = (
-            decoder
-            or AudioDecoder(
-                sample_rate=16000,
-                frame_duration_ms=20,
-            )
+        self.vad = vad or create_vad(
+            sample_rate=16000,
+            frame_duration_ms=20,
         )
 
-        self.vad = (
-            vad
-            or create_vad(
-                sample_rate=16000,
-                frame_duration_ms=20,
-            )
-        )
+        self.transcriber = transcriber or whisper_transcriber()
 
-        self.transcriber = (
-            transcriber
-            or whisper_transcriber()
-        )
+        self.turn_detector = turn_detector or TurnDetector()
 
-        self.turn_detector = (
-            turn_detector
-            or TurnDetector()
-        )
+        self.graph_runner = graph_runner or VoiceGraphRunner()
 
-        self.graph_runner = (
-            graph_runner
-            or VoiceGraphRunner()
-        )
-
-        self.synthesizer = (
-            synthesizer
-            or speech_synthesizer()
-        )
+        self.synthesizer = synthesizer or speech_synthesizer()
 
         logger.info(
             "[PIPELINE_INIT] "
@@ -347,41 +290,23 @@ class VoicePipeline:
         # Transport callbacks.
         # ----------------------------------------------------
 
-        self.on_speech_started = (
-            on_speech_started
-        )
+        self.on_speech_started = on_speech_started
 
-        self.on_transcript_changed = (
-            on_transcript_changed
-        )
+        self.on_transcript_changed = on_transcript_changed
 
-        self.on_turn_complete = (
-            on_turn_complete
-        )
+        self.on_turn_complete = on_turn_complete
 
-        self.on_assistant_started = (
-            on_assistant_started
-        )
+        self.on_assistant_started = on_assistant_started
 
-        self.on_assistant_status = (
-            on_assistant_status
-        )
+        self.on_assistant_status = on_assistant_status
 
-        self.on_assistant_text = (
-            on_assistant_text
-        )
+        self.on_assistant_text = on_assistant_text
 
-        self.on_assistant_audio = (
-            on_assistant_audio
-        )
+        self.on_assistant_audio = on_assistant_audio
 
-        self.on_assistant_completed = (
-            on_assistant_completed
-        )
+        self.on_assistant_completed = on_assistant_completed
 
-        self.on_assistant_error = (
-            on_assistant_error
-        )
+        self.on_assistant_error = on_assistant_error
 
         # ====================================================
         # Runtime state
@@ -395,21 +320,15 @@ class VoicePipeline:
         # Assistant execution.
         # ----------------------------------------------------
 
-        self.assistant_task: Optional[
-            asyncio.Task
-        ] = None
+        self.assistant_task: Optional[asyncio.Task] = None
 
-        self.assistant_turn_id: Optional[
-            int
-        ] = None
+        self.assistant_turn_id: Optional[int] = None
 
         # ----------------------------------------------------
         # Pending Whisper tasks.
         # ----------------------------------------------------
 
-        self._speech_transcription_tasks: set[
-            asyncio.Task
-        ] = set()
+        self._speech_transcription_tasks: set[asyncio.Task] = set()
 
         # ----------------------------------------------------
         # Pipeline generation.
@@ -439,10 +358,7 @@ class VoicePipeline:
         self._assistant_audio_bytes = 0
 
         logger.info(
-            "[PIPELINE_READY] "
-            "session=%s "
-            "elapsed_ms=%.2f "
-            "generation=%d",
+            "[PIPELINE_READY] session=%s elapsed_ms=%.2f generation=%d",
             self.session_id,
             self._elapsed_ms(),
             self._generation,
@@ -457,10 +373,7 @@ class VoicePipeline:
         Return milliseconds elapsed since pipeline construction.
         """
 
-        return (
-            time.perf_counter()
-            - self._created_at
-        ) * 1000.0
+        return (time.perf_counter() - self._created_at) * 1000.0
 
     @staticmethod
     def _now() -> float:
@@ -481,10 +394,7 @@ class VoicePipeline:
         timestamp.
         """
 
-        return (
-            time.perf_counter()
-            - started_at
-        ) * 1000.0
+        return (time.perf_counter() - started_at) * 1000.0
 
     # ========================================================
     # Start
@@ -498,7 +408,6 @@ class VoicePipeline:
         """
 
         if self.running:
-
             logger.debug(
                 "[PIPELINE_START_SKIP] "
                 "session=%s "
@@ -515,10 +424,7 @@ class VoicePipeline:
         self._closing = False
 
         logger.info(
-            "[PIPELINE_START] "
-            "session=%s "
-            "elapsed_ms=%.2f "
-            "generation=%d",
+            "[PIPELINE_START] session=%s elapsed_ms=%.2f generation=%d",
             self.session_id,
             self._elapsed_ms(),
             self._generation,
@@ -531,10 +437,7 @@ class VoicePipeline:
         component_start = self._now()
 
         logger.info(
-            "[TRANSCRIBER_START] "
-            "session=%s "
-            "elapsed_ms=%.2f "
-            "component=%s",
+            "[TRANSCRIBER_START] session=%s elapsed_ms=%.2f component=%s",
             self.session_id,
             self._elapsed_ms(),
             type(self.transcriber).__name__,
@@ -543,10 +446,7 @@ class VoicePipeline:
         await self.transcriber.start()
 
         logger.info(
-            "[TRANSCRIBER_READY] "
-            "session=%s "
-            "elapsed_ms=%.2f "
-            "duration_ms=%.2f",
+            "[TRANSCRIBER_READY] session=%s elapsed_ms=%.2f duration_ms=%.2f",
             self.session_id,
             self._elapsed_ms(),
             self._duration_ms(component_start),
@@ -559,10 +459,7 @@ class VoicePipeline:
         component_start = self._now()
 
         logger.info(
-            "[SYNTHESIZER_START] "
-            "session=%s "
-            "elapsed_ms=%.2f "
-            "component=%s",
+            "[SYNTHESIZER_START] session=%s elapsed_ms=%.2f component=%s",
             self.session_id,
             self._elapsed_ms(),
             type(self.synthesizer).__name__,
@@ -571,10 +468,7 @@ class VoicePipeline:
         await self.synthesizer.start()
 
         logger.info(
-            "[SYNTHESIZER_READY] "
-            "session=%s "
-            "elapsed_ms=%.2f "
-            "duration_ms=%.2f",
+            "[SYNTHESIZER_READY] session=%s elapsed_ms=%.2f duration_ms=%.2f",
             self.session_id,
             self._elapsed_ms(),
             self._duration_ms(component_start),
@@ -583,10 +477,7 @@ class VoicePipeline:
         self.running = True
 
         logger.info(
-            "[PIPELINE_STARTED] "
-            "session=%s "
-            "elapsed_ms=%.2f "
-            "startup_duration_ms=%.2f",
+            "[PIPELINE_STARTED] session=%s elapsed_ms=%.2f startup_duration_ms=%.2f",
             self.session_id,
             self._elapsed_ms(),
             self._duration_ms(start_time),
@@ -605,12 +496,8 @@ class VoicePipeline:
         """
 
         if not self.running:
-
             logger.debug(
-                "[AUDIO_DROP] "
-                "session=%s "
-                "elapsed_ms=%.2f "
-                "reason=pipeline_not_running",
+                "[AUDIO_DROP] session=%s elapsed_ms=%.2f reason=pipeline_not_running",
                 self.session_id,
                 self._elapsed_ms(),
             )
@@ -618,12 +505,8 @@ class VoicePipeline:
             return
 
         if not audio_chunk:
-
             logger.debug(
-                "[AUDIO_DROP] "
-                "session=%s "
-                "elapsed_ms=%.2f "
-                "reason=empty_chunk",
+                "[AUDIO_DROP] session=%s elapsed_ms=%.2f reason=empty_chunk",
                 self.session_id,
                 self._elapsed_ms(),
             )
@@ -633,9 +516,7 @@ class VoicePipeline:
         receive_time = self._now()
 
         self._received_audio_chunks += 1
-        self._received_audio_bytes += len(
-            audio_chunk
-        )
+        self._received_audio_bytes += len(audio_chunk)
 
         chunk_id = self._received_audio_chunks
 
@@ -659,16 +540,11 @@ class VoicePipeline:
 
         decode_start = self._now()
 
-        frames = await self.decoder.decode(
-            audio_chunk
-        )
+        frames = await self.decoder.decode(audio_chunk)
 
-        decode_duration = self._duration_ms(
-            decode_start
-        )
+        decode_duration = self._duration_ms(decode_start)
 
         if not self.running:
-
             logger.debug(
                 "[AUDIO_DECODE_ABORT] "
                 "session=%s "
@@ -702,10 +578,7 @@ class VoicePipeline:
         # Process every decoded frame through VAD.
         # ----------------------------------------------------
 
-        for frame_index, frame in enumerate(
-            frames
-        ):
-
+        for frame_index, frame in enumerate(frames):
             if not self.running:
                 return
 
@@ -713,9 +586,7 @@ class VoicePipeline:
                 continue
 
             self._decoded_frames += 1
-            self._decoded_pcm_bytes += len(
-                frame
-            )
+            self._decoded_pcm_bytes += len(frame)
 
             logger.debug(
                 "[PCM_FRAME] "
@@ -735,16 +606,11 @@ class VoicePipeline:
 
             vad_start = self._now()
 
-            vad_events = self.vad.process(
-                frame
-            )
+            vad_events = self.vad.process(frame)
 
-            vad_duration = self._duration_ms(
-                vad_start
-            )
+            vad_duration = self._duration_ms(vad_start)
 
             if vad_events:
-
                 logger.debug(
                     "[VAD_EVENTS] "
                     "session=%s "
@@ -762,13 +628,10 @@ class VoicePipeline:
                 )
 
             for vad_event in vad_events:
-
                 if not self.running:
                     return
 
-                await self._handle_vad_event(
-                    vad_event
-                )
+                await self._handle_vad_event(vad_event)
 
     # ========================================================
     # VAD
@@ -799,25 +662,13 @@ class VoicePipeline:
             self._elapsed_ms(),
         )
 
-        if (
-            event.type
-            == VADEventType.SPEECH_STARTED
-        ):
-
-            await self._handle_speech_started(
-                event
-            )
+        if event.type == VADEventType.SPEECH_STARTED:
+            await self._handle_speech_started(event)
 
             return
 
-        if (
-            event.type
-            == VADEventType.SPEECH_ENDED
-        ):
-
-            await self._handle_speech_ended(
-                event
-            )
+        if event.type == VADEventType.SPEECH_ENDED:
+            await self._handle_speech_ended(event)
 
     # ========================================================
     # Speech started
@@ -853,10 +704,8 @@ class VoicePipeline:
         if (
             INTERRUPTION_ENABLED
             and self.assistant_turn_id is not None
-            and event.speech_duration
-            >= INTERRUPTION_MIN_SPEECH_SECONDS
+            and event.speech_duration >= INTERRUPTION_MIN_SPEECH_SECONDS
         ):
-
             logger.info(
                 "[BARGE_IN_DETECTED] "
                 "session=%s "
@@ -879,11 +728,7 @@ class VoicePipeline:
 
         detector_start = self._now()
 
-        turn_events = await (
-            self.turn_detector.process_vad_event(
-                event
-            )
-        )
+        turn_events = await self.turn_detector.process_vad_event(event)
 
         logger.debug(
             "[TURN_DETECTOR_VAD] "
@@ -900,7 +745,6 @@ class VoicePipeline:
         )
 
         for turn_event in turn_events:
-
             if not self.running:
                 return
 
@@ -908,24 +752,17 @@ class VoicePipeline:
                 turn_event,
                 SpeechStarted,
             ):
-
                 logger.info(
-                    "[TURN_SPEECH_STARTED] "
-                    "session=%s "
-                    "turn=%s "
-                    "elapsed_ms=%.2f",
+                    "[TURN_SPEECH_STARTED] session=%s turn=%s elapsed_ms=%.2f",
                     self.session_id,
                     turn_event.turn_id,
                     self._elapsed_ms(),
                 )
 
                 if self.on_speech_started:
-
                     callback_start = self._now()
 
-                    await self.on_speech_started(
-                        turn_event
-                    )
+                    await self.on_speech_started(turn_event)
 
                     logger.debug(
                         "[CALLBACK_DONE] "
@@ -934,9 +771,7 @@ class VoicePipeline:
                         "duration_ms=%.2f "
                         "elapsed_ms=%.2f",
                         self.session_id,
-                        self._duration_ms(
-                            callback_start
-                        ),
+                        self._duration_ms(callback_start),
                         self._elapsed_ms(),
                     )
 
@@ -957,11 +792,8 @@ class VoicePipeline:
             return
 
         if not event.audio:
-
             logger.warning(
-                "[SPEECH_ENDED_NO_AUDIO] "
-                "session=%s "
-                "elapsed_ms=%.2f",
+                "[SPEECH_ENDED_NO_AUDIO] session=%s elapsed_ms=%.2f",
                 self.session_id,
                 self._elapsed_ms(),
             )
@@ -969,12 +801,8 @@ class VoicePipeline:
             return
 
         if event.speech_duration <= 0:
-
             logger.warning(
-                "[SPEECH_ENDED_INVALID] "
-                "session=%s "
-                "duration=%.3f "
-                "elapsed_ms=%.2f",
+                "[SPEECH_ENDED_INVALID] session=%s duration=%.3f elapsed_ms=%.2f",
                 self.session_id,
                 event.speech_duration,
                 self._elapsed_ms(),
@@ -1010,9 +838,7 @@ class VoicePipeline:
             )
         )
 
-        self._speech_transcription_tasks.add(
-            task
-        )
+        self._speech_transcription_tasks.add(task)
 
         logger.debug(
             "[WHISPER_TASK_CREATED] "
@@ -1022,15 +848,11 @@ class VoicePipeline:
             "elapsed_ms=%.2f",
             self.session_id,
             generation,
-            len(
-                self._speech_transcription_tasks
-            ),
+            len(self._speech_transcription_tasks),
             self._elapsed_ms(),
         )
 
-        task.add_done_callback(
-            self._speech_transcription_tasks.discard
-        )
+        task.add_done_callback(self._speech_transcription_tasks.discard)
 
     # ========================================================
     # Transcription
@@ -1063,17 +885,12 @@ class VoicePipeline:
         )
 
         try:
-
-            result = await (
-                self.transcriber.transcribe_pcm(
-                    pcm_audio,
-                    sample_rate=16000,
-                )
+            result = await self.transcriber.transcribe_pcm(
+                pcm_audio,
+                sample_rate=16000,
             )
 
-            whisper_duration = self._duration_ms(
-                whisper_start
-            )
+            whisper_duration = self._duration_ms(whisper_start)
 
             logger.info(
                 "[WHISPER_COMPLETE] "
@@ -1090,7 +907,6 @@ class VoicePipeline:
             )
 
             if not self.running:
-
                 logger.debug(
                     "[WHISPER_STALE] "
                     "session=%s "
@@ -1103,7 +919,6 @@ class VoicePipeline:
                 return
 
             if generation != self._generation:
-
                 logger.debug(
                     "[WHISPER_STALE] "
                     "session=%s "
@@ -1119,11 +934,8 @@ class VoicePipeline:
                 return
 
             if not result.has_speech:
-
                 logger.info(
-                    "[WHISPER_NO_SPEECH] "
-                    "session=%s "
-                    "elapsed_ms=%.2f",
+                    "[WHISPER_NO_SPEECH] session=%s elapsed_ms=%.2f",
                     self.session_id,
                     self._elapsed_ms(),
                 )
@@ -1133,11 +945,8 @@ class VoicePipeline:
             transcript = result.text.strip()
 
             if not transcript:
-
                 logger.info(
-                    "[WHISPER_EMPTY_TRANSCRIPT] "
-                    "session=%s "
-                    "elapsed_ms=%.2f",
+                    "[WHISPER_EMPTY_TRANSCRIPT] session=%s elapsed_ms=%.2f",
                     self.session_id,
                     self._elapsed_ms(),
                 )
@@ -1145,11 +954,7 @@ class VoicePipeline:
                 return
 
             logger.info(
-                "[TRANSCRIPT_READY] "
-                "session=%s "
-                "text=%r "
-                "chars=%d "
-                "elapsed_ms=%.2f",
+                "[TRANSCRIPT_READY] session=%s text=%r chars=%d elapsed_ms=%.2f",
                 self.session_id,
                 transcript,
                 len(transcript),
@@ -1162,11 +967,7 @@ class VoicePipeline:
 
             detector_start = self._now()
 
-            transcript_events = await (
-                self.turn_detector.process_transcript(
-                    transcript
-                )
-            )
+            transcript_events = await self.turn_detector.process_transcript(transcript)
 
             logger.debug(
                 "[TURN_DETECTOR_TRANSCRIPT] "
@@ -1181,7 +982,6 @@ class VoicePipeline:
             )
 
             for turn_event in transcript_events:
-
                 if not self.running:
                     return
 
@@ -1189,7 +989,6 @@ class VoicePipeline:
                     turn_event,
                     SpeechStarted,
                 ):
-
                     logger.info(
                         "[TURN_EVENT] "
                         "session=%s "
@@ -1202,16 +1001,12 @@ class VoicePipeline:
                     )
 
                     if self.on_speech_started:
-
-                        await self.on_speech_started(
-                            turn_event
-                        )
+                        await self.on_speech_started(turn_event)
 
                 elif isinstance(
                     turn_event,
                     TranscriptChanged,
                 ):
-
                     logger.info(
                         "[TURN_EVENT] "
                         "session=%s "
@@ -1226,16 +1021,12 @@ class VoicePipeline:
                     )
 
                     if self.on_transcript_changed:
-
-                        await self.on_transcript_changed(
-                            turn_event
-                        )
+                        await self.on_transcript_changed(turn_event)
 
                 elif isinstance(
                     turn_event,
                     TurnCompleted,
                 ):
-
                     logger.info(
                         "[TURN_EVENT] "
                         "session=%s "
@@ -1249,9 +1040,7 @@ class VoicePipeline:
                         self._elapsed_ms(),
                     )
 
-                    await self._handle_turn_complete(
-                        turn_event
-                    )
+                    await self._handle_turn_complete(turn_event)
 
             # ------------------------------------------------
             # Current TurnDetector contract:
@@ -1268,11 +1057,7 @@ class VoicePipeline:
 
             detector_start = self._now()
 
-            turn_events = await (
-                self.turn_detector.process_vad_event(
-                    speech_end_event
-                )
-            )
+            turn_events = await self.turn_detector.process_vad_event(speech_end_event)
 
             logger.debug(
                 "[TURN_DETECTOR_SPEECH_END] "
@@ -1287,7 +1072,6 @@ class VoicePipeline:
             )
 
             for turn_event in turn_events:
-
                 if not self.running:
                     return
 
@@ -1298,7 +1082,6 @@ class VoicePipeline:
                     turn_event,
                     TurnCompleted,
                 ):
-
                     logger.info(
                         "[TURN_COMPLETED_AFTER_VAD_END] "
                         "session=%s "
@@ -1311,17 +1094,11 @@ class VoicePipeline:
                         self._elapsed_ms(),
                     )
 
-                    await self._handle_turn_complete(
-                        turn_event
-                    )
+                    await self._handle_turn_complete(turn_event)
 
         except asyncio.CancelledError:
-
             logger.info(
-                "[WHISPER_CANCELLED] "
-                "session=%s "
-                "elapsed_ms=%.2f "
-                "running=%s",
+                "[WHISPER_CANCELLED] session=%s elapsed_ms=%.2f running=%s",
                 self.session_id,
                 self._elapsed_ms(),
                 self.running,
@@ -1330,11 +1107,8 @@ class VoicePipeline:
             raise
 
         except Exception:
-
             logger.exception(
-                "[WHISPER_ERROR] "
-                "session=%s "
-                "elapsed_ms=%.2f",
+                "[WHISPER_ERROR] session=%s elapsed_ms=%.2f",
                 self.session_id,
                 self._elapsed_ms(),
             )
@@ -1360,12 +1134,7 @@ class VoicePipeline:
             return
 
         logger.info(
-            "[USER_TURN_COMPLETE] "
-            "session=%s "
-            "turn=%s "
-            "text=%r "
-            "chars=%d "
-            "elapsed_ms=%.2f",
+            "[USER_TURN_COMPLETE] session=%s turn=%s text=%r chars=%d elapsed_ms=%.2f",
             self.session_id,
             completed.turn_id,
             text,
@@ -1378,12 +1147,9 @@ class VoicePipeline:
         # ----------------------------------------------------
 
         if self.on_turn_complete:
-
             callback_start = self._now()
 
-            await self.on_turn_complete(
-                completed
-            )
+            await self.on_turn_complete(completed)
 
             logger.debug(
                 "[CALLBACK_DONE] "
@@ -1392,9 +1158,7 @@ class VoicePipeline:
                 "duration_ms=%.2f "
                 "elapsed_ms=%.2f",
                 self.session_id,
-                self._duration_ms(
-                    callback_start
-                ),
+                self._duration_ms(callback_start),
                 self._elapsed_ms(),
             )
 
@@ -1424,28 +1188,17 @@ class VoicePipeline:
         start = 0
 
         for index, char in enumerate(buffer):
-
             if char not in ".!?":
                 continue
 
-            is_end_of_text = (
-                index == len(buffer) - 1
-            )
+            is_end_of_text = index == len(buffer) - 1
 
-            next_is_space = (
-                not is_end_of_text
-                and buffer[index + 1].isspace()
-            )
+            next_is_space = not is_end_of_text and buffer[index + 1].isspace()
 
-            if (
-                not is_end_of_text
-                and not next_is_space
-            ):
+            if not is_end_of_text and not next_is_space:
                 continue
 
-            sentence = buffer[
-                start:index + 1
-            ].strip()
+            sentence = buffer[start : index + 1].strip()
 
             if sentence:
                 sentences.append(sentence)
@@ -1510,12 +1263,9 @@ class VoicePipeline:
         )
 
         if self.on_assistant_started:
-
             callback_start = self._now()
 
-            await self.on_assistant_started(
-                turn_id
-            )
+            await self.on_assistant_started(turn_id)
 
             logger.debug(
                 "[CALLBACK_DONE] "
@@ -1526,9 +1276,7 @@ class VoicePipeline:
                 "elapsed_ms=%.2f",
                 self.session_id,
                 turn_id,
-                self._duration_ms(
-                    callback_start
-                ),
+                self._duration_ms(callback_start),
                 self._elapsed_ms(),
             )
 
@@ -1545,11 +1293,7 @@ class VoicePipeline:
         self.assistant_task = task
 
         logger.info(
-            "[ASSISTANT_TASK_CREATED] "
-            "session=%s "
-            "turn=%s "
-            "generation=%d "
-            "elapsed_ms=%.2f",
+            "[ASSISTANT_TASK_CREATED] session=%s turn=%s generation=%d elapsed_ms=%.2f",
             self.session_id,
             turn_id,
             generation,
@@ -1557,54 +1301,36 @@ class VoicePipeline:
         )
 
         try:
-
             await task
 
         except asyncio.CancelledError:
-
             logger.info(
-                "[ASSISTANT_TASK_CANCELLED] "
-                "session=%s "
-                "turn=%s "
-                "elapsed_ms=%.2f",
+                "[ASSISTANT_TASK_CANCELLED] session=%s turn=%s elapsed_ms=%.2f",
                 self.session_id,
                 turn_id,
                 self._elapsed_ms(),
             )
 
         except Exception as exc:
-
             logger.exception(
-                "[ASSISTANT_TASK_ERROR] "
-                "session=%s "
-                "turn=%s "
-                "elapsed_ms=%.2f",
+                "[ASSISTANT_TASK_ERROR] session=%s turn=%s elapsed_ms=%.2f",
                 self.session_id,
                 turn_id,
                 self._elapsed_ms(),
             )
 
-            if (
-                self.running
-                and self.on_assistant_error
-            ):
-
+            if self.running and self.on_assistant_error:
                 await self.on_assistant_error(
                     turn_id,
                     exc,
                 )
 
         finally:
-
             if self.assistant_task is task:
-
                 self.assistant_task = None
 
                 logger.debug(
-                    "[ASSISTANT_TASK_CLEARED] "
-                    "session=%s "
-                    "turn=%s "
-                    "elapsed_ms=%.2f",
+                    "[ASSISTANT_TASK_CLEARED] session=%s turn=%s elapsed_ms=%.2f",
                     self.session_id,
                     turn_id,
                     self._elapsed_ms(),
@@ -1669,21 +1395,16 @@ class VoicePipeline:
         )
 
         try:
-
-            async for graph_event in (
-                self.graph_runner.stream(
-                    user_text,
-                    self.session_id,
-                )
+            async for graph_event in self.graph_runner.stream(
+                user_text,
+                self.session_id,
             ):
-
                 event_received_at = self._now()
 
                 if not self._assistant_is_current(
                     turn_id,
                     generation,
                 ):
-
                     logger.debug(
                         "[GRAPH_EVENT_STALE] "
                         "session=%s "
@@ -1702,15 +1423,12 @@ class VoicePipeline:
 
                 self._assistant_graph_events += 1
 
-                event_id = (
-                    self._assistant_graph_events
-                )
+                event_id = self._assistant_graph_events
 
                 if not isinstance(
                     graph_event,
                     VoiceGraphEvent,
                 ):
-
                     logger.warning(
                         "[GRAPH_EVENT_INVALID] "
                         "session=%s "
@@ -1721,9 +1439,7 @@ class VoicePipeline:
                         self.session_id,
                         turn_id,
                         event_id,
-                        type(
-                            graph_event
-                        ).__name__,
+                        type(graph_event).__name__,
                         self._elapsed_ms(),
                     )
 
@@ -1742,27 +1458,17 @@ class VoicePipeline:
                     turn_id,
                     event_id,
                     graph_event.type.name,
-                    len(
-                        graph_event.content or ""
-                    ),
+                    len(graph_event.content or ""),
                     self._elapsed_ms(),
-                    self._duration_ms(
-                        assistant_start
-                    ),
+                    self._duration_ms(assistant_start),
                 )
 
                 # ==========================================
                 # STATUS
                 # ==========================================
 
-                if (
-                    graph_event.type
-                    == VoiceGraphEventType.STATUS
-                ):
-
-                    status = (
-                        graph_event.content.strip()
-                    )
+                if graph_event.type == VoiceGraphEventType.STATUS:
+                    status = graph_event.content.strip()
 
                     if not status:
                         continue
@@ -1780,7 +1486,6 @@ class VoicePipeline:
                     )
 
                     if self.on_assistant_status:
-
                         callback_start = self._now()
 
                         await self.on_assistant_status(
@@ -1797,9 +1502,7 @@ class VoicePipeline:
                             "elapsed_ms=%.2f",
                             self.session_id,
                             turn_id,
-                            self._duration_ms(
-                                callback_start
-                            ),
+                            self._duration_ms(callback_start),
                             self._elapsed_ms(),
                         )
 
@@ -1809,10 +1512,7 @@ class VoicePipeline:
                 # TEXT
                 # ==========================================
 
-                if (
-                    graph_event.type
-                    != VoiceGraphEventType.TEXT
-                ):
+                if graph_event.type != VoiceGraphEventType.TEXT:
                     continue
 
                 token = graph_event.content
@@ -1860,7 +1560,6 @@ class VoicePipeline:
                 # ------------------------------------------------
 
                 if self.on_assistant_text:
-
                     callback_start = self._now()
 
                     await self.on_assistant_text(
@@ -1878,9 +1577,7 @@ class VoicePipeline:
                         self.session_id,
                         turn_id,
                         token,
-                        self._duration_ms(
-                            callback_start
-                        ),
+                        self._duration_ms(callback_start),
                         self._elapsed_ms(),
                     )
 
@@ -1888,19 +1585,14 @@ class VoicePipeline:
                 # Extract complete sentences.
                 # ------------------------------------------------
 
-                before_buffer = (
-                    sentence_buffer
-                )
+                before_buffer = sentence_buffer
 
                 (
                     sentences,
                     sentence_buffer,
-                ) = self._extract_complete_sentences(
-                    sentence_buffer
-                )
+                ) = self._extract_complete_sentences(sentence_buffer)
 
                 if sentences:
-
                     logger.info(
                         "[TEXT_SENTENCE_READY] "
                         "session=%s "
@@ -1927,7 +1619,6 @@ class VoicePipeline:
                     sentences,
                     start=1,
                 ):
-
                     logger.info(
                         "[TTS_QUEUE_SENTENCE] "
                         "session=%s "
@@ -1944,16 +1635,13 @@ class VoicePipeline:
                         self._elapsed_ms(),
                     )
 
-                    success = (
-                        await self._synthesize_sentence(
-                            sentence=sentence,
-                            turn_id=turn_id,
-                            generation=generation,
-                        )
+                    success = await self._synthesize_sentence(
+                        sentence=sentence,
+                        turn_id=turn_id,
+                        generation=generation,
                     )
 
                     if not success:
-
                         logger.info(
                             "[TTS_SENTENCE_ABORTED] "
                             "session=%s "
@@ -1975,14 +1663,9 @@ class VoicePipeline:
                 # take before control returned to the graph?
                 # ------------------------------------------------
 
-                event_processing_ms = (
-                    self._duration_ms(
-                        event_received_at
-                    )
-                )
+                event_processing_ms = self._duration_ms(event_received_at)
 
                 if event_processing_ms > 50:
-
                     logger.warning(
                         "[GRAPH_EVENT_SLOW] "
                         "session=%s "
@@ -2001,11 +1684,7 @@ class VoicePipeline:
             # Graph finished
             # ====================================================
 
-            graph_duration = (
-                self._duration_ms(
-                    assistant_start
-                )
-            )
+            graph_duration = self._duration_ms(assistant_start)
 
             logger.info(
                 "[GRAPH_STREAM_COMPLETE] "
@@ -2038,7 +1717,6 @@ class VoicePipeline:
             remaining = sentence_buffer.strip()
 
             if remaining:
-
                 logger.info(
                     "[FINAL_TEXT_BUFFER] "
                     "session=%s "
@@ -2053,12 +1731,10 @@ class VoicePipeline:
                     self._elapsed_ms(),
                 )
 
-                success = (
-                    await self._synthesize_sentence(
-                        sentence=remaining,
-                        turn_id=turn_id,
-                        generation=generation,
-                    )
+                success = await self._synthesize_sentence(
+                    sentence=remaining,
+                    turn_id=turn_id,
+                    generation=generation,
                 )
 
                 if not success:
@@ -2087,9 +1763,7 @@ class VoicePipeline:
                 "elapsed_ms=%.2f",
                 self.session_id,
                 turn_id,
-                self._duration_ms(
-                    assistant_start
-                ),
+                self._duration_ms(assistant_start),
                 len(total_text),
                 self._assistant_graph_events,
                 self._assistant_text_tokens,
@@ -2099,12 +1773,9 @@ class VoicePipeline:
             )
 
             if self.on_assistant_completed:
-
                 callback_start = self._now()
 
-                await self.on_assistant_completed(
-                    turn_id
-                )
+                await self.on_assistant_completed(turn_id)
 
                 logger.debug(
                     "[CALLBACK_DONE] "
@@ -2115,16 +1786,13 @@ class VoicePipeline:
                     "elapsed_ms=%.2f",
                     self.session_id,
                     turn_id,
-                    self._duration_ms(
-                        callback_start
-                    ),
+                    self._duration_ms(callback_start),
                     self._elapsed_ms(),
                 )
 
             self.assistant_turn_id = None
 
         except asyncio.CancelledError:
-
             logger.info(
                 "[GRAPH_STREAM_CANCELLED] "
                 "session=%s "
@@ -2133,16 +1801,13 @@ class VoicePipeline:
                 "elapsed_ms=%.2f",
                 self.session_id,
                 turn_id,
-                self._duration_ms(
-                    assistant_start
-                ),
+                self._duration_ms(assistant_start),
                 self._elapsed_ms(),
             )
 
             raise
 
         except Exception:
-
             logger.exception(
                 "[GRAPH_STREAM_ERROR] "
                 "session=%s "
@@ -2151,9 +1816,7 @@ class VoicePipeline:
                 "elapsed_ms=%.2f",
                 self.session_id,
                 turn_id,
-                self._duration_ms(
-                    assistant_start
-                ),
+                self._duration_ms(assistant_start),
                 self._elapsed_ms(),
             )
 
@@ -2180,7 +1843,6 @@ class VoicePipeline:
         )
 
         if not current:
-
             logger.debug(
                 "[ASSISTANT_NOT_CURRENT] "
                 "session=%s "
@@ -2260,24 +1922,13 @@ class VoicePipeline:
         audio_bytes = 0
 
         try:
-
-            async for audio in (
-                self.synthesizer.synthesize_stream(
-                    sentence
-                )
-            ):
-
+            async for audio in self.synthesizer.synthesize_stream(sentence):
                 if not self._assistant_is_current(
                     turn_id,
                     generation,
                 ):
-
                     logger.info(
-                        "[TTS_STALE_AUDIO] "
-                        "session=%s "
-                        "turn=%s "
-                        "chunk=%d "
-                        "elapsed_ms=%.2f",
+                        "[TTS_STALE_AUDIO] session=%s turn=%s chunk=%d elapsed_ms=%.2f",
                         self.session_id,
                         turn_id,
                         chunk_count,
@@ -2293,9 +1944,7 @@ class VoicePipeline:
                 audio_bytes += len(audio)
 
                 self._assistant_audio_chunks += 1
-                self._assistant_audio_bytes += len(
-                    audio
-                )
+                self._assistant_audio_bytes += len(audio)
 
                 logger.debug(
                     "[TTS_AUDIO_CHUNK] "
@@ -2312,13 +1961,10 @@ class VoicePipeline:
                     len(audio),
                     audio_bytes,
                     self._elapsed_ms(),
-                    self._duration_ms(
-                        tts_start
-                    ),
+                    self._duration_ms(tts_start),
                 )
 
                 if self.on_assistant_audio:
-
                     callback_start = self._now()
 
                     await self.on_assistant_audio(
@@ -2326,11 +1972,7 @@ class VoicePipeline:
                         turn_id,
                     )
 
-                    callback_duration = (
-                        self._duration_ms(
-                            callback_start
-                        )
-                    )
+                    callback_duration = self._duration_ms(callback_start)
 
                     logger.debug(
                         "[FRONTEND_AUDIO_OUT] "
@@ -2354,7 +1996,6 @@ class VoicePipeline:
                     # ------------------------------------------------
 
                     if callback_duration > 50:
-
                         logger.warning(
                             "[FRONTEND_AUDIO_SLOW] "
                             "session=%s "
@@ -2395,7 +2036,6 @@ class VoicePipeline:
             return success
 
         except asyncio.CancelledError:
-
             logger.info(
                 "[TTS_CANCELLED] "
                 "session=%s "
@@ -2415,7 +2055,6 @@ class VoicePipeline:
             raise
 
         except Exception:
-
             logger.exception(
                 "[TTS_ERROR] "
                 "session=%s "
@@ -2455,7 +2094,6 @@ class VoicePipeline:
         old_turn_id = self.assistant_turn_id
 
         if old_turn_id is None:
-
             logger.debug(
                 "[INTERRUPT_SKIP] "
                 "session=%s "
@@ -2470,11 +2108,7 @@ class VoicePipeline:
         interrupt_start = self._now()
 
         logger.info(
-            "[INTERRUPT_START] "
-            "session=%s "
-            "turn=%s "
-            "generation_before=%d "
-            "elapsed_ms=%.2f",
+            "[INTERRUPT_START] session=%s turn=%s generation_before=%d elapsed_ms=%.2f",
             self.session_id,
             old_turn_id,
             self._generation,
@@ -2508,7 +2142,6 @@ class VoicePipeline:
         tts_cancel_start = self._now()
 
         try:
-
             await self.synthesizer.cancel()
 
             logger.info(
@@ -2519,19 +2152,13 @@ class VoicePipeline:
                 "elapsed_ms=%.2f",
                 self.session_id,
                 old_turn_id,
-                self._duration_ms(
-                    tts_cancel_start
-                ),
+                self._duration_ms(tts_cancel_start),
                 self._elapsed_ms(),
             )
 
         except Exception:
-
             logger.exception(
-                "[TTS_CANCEL_ERROR] "
-                "session=%s "
-                "turn=%s "
-                "elapsed_ms=%.2f",
+                "[TTS_CANCEL_ERROR] session=%s turn=%s elapsed_ms=%.2f",
                 self.session_id,
                 old_turn_id,
                 self._elapsed_ms(),
@@ -2545,18 +2172,11 @@ class VoicePipeline:
 
         self.assistant_task = None
 
-        if (
-            task is not None
-            and not task.done()
-        ):
-
+        if task is not None and not task.done():
             graph_cancel_start = self._now()
 
             logger.info(
-                "[GRAPH_CANCEL_START] "
-                "session=%s "
-                "turn=%s "
-                "elapsed_ms=%.2f",
+                "[GRAPH_CANCEL_START] session=%s turn=%s elapsed_ms=%.2f",
                 self.session_id,
                 old_turn_id,
                 self._elapsed_ms(),
@@ -2577,9 +2197,7 @@ class VoicePipeline:
                 "elapsed_ms=%.2f",
                 self.session_id,
                 old_turn_id,
-                self._duration_ms(
-                    graph_cancel_start
-                ),
+                self._duration_ms(graph_cancel_start),
                 self._elapsed_ms(),
             )
 
@@ -2592,9 +2210,7 @@ class VoicePipeline:
             "elapsed_ms=%.2f",
             self.session_id,
             old_turn_id,
-            self._duration_ms(
-                interrupt_start
-            ),
+            self._duration_ms(interrupt_start),
             self._generation,
             self._elapsed_ms(),
         )
@@ -2655,27 +2271,18 @@ class VoicePipeline:
         tts_cancel_start = self._now()
 
         try:
-
             await self.synthesizer.cancel()
 
             logger.debug(
-                "[TTS_CANCEL_DONE] "
-                "session=%s "
-                "duration_ms=%.2f "
-                "elapsed_ms=%.2f",
+                "[TTS_CANCEL_DONE] session=%s duration_ms=%.2f elapsed_ms=%.2f",
                 self.session_id,
-                self._duration_ms(
-                    tts_cancel_start
-                ),
+                self._duration_ms(tts_cancel_start),
                 self._elapsed_ms(),
             )
 
         except Exception:
-
             logger.exception(
-                "[TTS_CANCEL_ERROR] "
-                "session=%s "
-                "elapsed_ms=%.2f",
+                "[TTS_CANCEL_ERROR] session=%s elapsed_ms=%.2f",
                 self.session_id,
                 self._elapsed_ms(),
             )
@@ -2688,11 +2295,7 @@ class VoicePipeline:
 
         self.assistant_task = None
 
-        if (
-            task is not None
-            and not task.done()
-        ):
-
+        if task is not None and not task.done():
             task.cancel()
 
             await asyncio.gather(
@@ -2701,10 +2304,7 @@ class VoicePipeline:
             )
 
             logger.debug(
-                "[GRAPH_CANCEL_DONE] "
-                "session=%s "
-                "turn=%s "
-                "elapsed_ms=%.2f",
+                "[GRAPH_CANCEL_DONE] session=%s turn=%s elapsed_ms=%.2f",
                 self.session_id,
                 old_turn_id,
                 self._elapsed_ms(),
@@ -2719,9 +2319,7 @@ class VoicePipeline:
             "elapsed_ms=%.2f",
             self.session_id,
             old_turn_id,
-            self._duration_ms(
-                cancel_start
-            ),
+            self._duration_ms(cancel_start),
             self._generation,
             self._elapsed_ms(),
         )
@@ -2738,7 +2336,6 @@ class VoicePipeline:
         """
 
         if self._closing:
-
             logger.debug(
                 "[PIPELINE_CLOSE_SKIP] "
                 "session=%s "
@@ -2753,12 +2350,8 @@ class VoicePipeline:
         self._closing = True
 
         if not self.running:
-
             logger.debug(
-                "[PIPELINE_CLOSE_SKIP] "
-                "session=%s "
-                "reason=not_running "
-                "elapsed_ms=%.2f",
+                "[PIPELINE_CLOSE_SKIP] session=%s reason=not_running elapsed_ms=%.2f",
                 self.session_id,
                 self._elapsed_ms(),
             )
@@ -2768,10 +2361,7 @@ class VoicePipeline:
         close_start = self._now()
 
         logger.info(
-            "[PIPELINE_CLOSE_START] "
-            "session=%s "
-            "generation=%d "
-            "elapsed_ms=%.2f",
+            "[PIPELINE_CLOSE_START] session=%s generation=%d elapsed_ms=%.2f",
             self.session_id,
             self._generation,
             self._elapsed_ms(),
@@ -2786,10 +2376,7 @@ class VoicePipeline:
         self._generation += 1
 
         logger.debug(
-            "[PIPELINE_INVALIDATED] "
-            "session=%s "
-            "generation=%d "
-            "elapsed_ms=%.2f",
+            "[PIPELINE_INVALIDATED] session=%s generation=%d elapsed_ms=%.2f",
             self.session_id,
             self._generation,
             self._elapsed_ms(),
@@ -2805,27 +2392,20 @@ class VoicePipeline:
         # Cancel pending Whisper tasks.
         # ----------------------------------------------------
 
-        transcription_tasks = list(
-            self._speech_transcription_tasks
-        )
+        transcription_tasks = list(self._speech_transcription_tasks)
 
         logger.info(
-            "[WHISPER_SHUTDOWN] "
-            "session=%s "
-            "pending_tasks=%d "
-            "elapsed_ms=%.2f",
+            "[WHISPER_SHUTDOWN] session=%s pending_tasks=%d elapsed_ms=%.2f",
             self.session_id,
             len(transcription_tasks),
             self._elapsed_ms(),
         )
 
         for task in transcription_tasks:
-
             if not task.done():
                 task.cancel()
 
         if transcription_tasks:
-
             await asyncio.gather(
                 *transcription_tasks,
                 return_exceptions=True,
@@ -2838,27 +2418,20 @@ class VoicePipeline:
         # ----------------------------------------------------
 
         try:
-
             reset_start = self._now()
 
             self.vad.reset()
 
             logger.debug(
-                "[VAD_RESET] "
-                "session=%s "
-                "duration_ms=%.2f "
-                "elapsed_ms=%.2f",
+                "[VAD_RESET] session=%s duration_ms=%.2f elapsed_ms=%.2f",
                 self.session_id,
                 self._duration_ms(reset_start),
                 self._elapsed_ms(),
             )
 
         except Exception:
-
             logger.exception(
-                "[VAD_RESET_ERROR] "
-                "session=%s "
-                "elapsed_ms=%.2f",
+                "[VAD_RESET_ERROR] session=%s elapsed_ms=%.2f",
                 self.session_id,
                 self._elapsed_ms(),
             )
@@ -2868,27 +2441,20 @@ class VoicePipeline:
         # ----------------------------------------------------
 
         try:
-
             reset_start = self._now()
 
             await self.turn_detector.reset()
 
             logger.debug(
-                "[TURN_DETECTOR_RESET] "
-                "session=%s "
-                "duration_ms=%.2f "
-                "elapsed_ms=%.2f",
+                "[TURN_DETECTOR_RESET] session=%s duration_ms=%.2f elapsed_ms=%.2f",
                 self.session_id,
                 self._duration_ms(reset_start),
                 self._elapsed_ms(),
             )
 
         except Exception:
-
             logger.exception(
-                "[TURN_DETECTOR_RESET_ERROR] "
-                "session=%s "
-                "elapsed_ms=%.2f",
+                "[TURN_DETECTOR_RESET_ERROR] session=%s elapsed_ms=%.2f",
                 self.session_id,
                 self._elapsed_ms(),
             )
@@ -2898,29 +2464,20 @@ class VoicePipeline:
         # ----------------------------------------------------
 
         try:
-
             close_component_start = self._now()
 
             await self.decoder.close()
 
             logger.debug(
-                "[DECODER_CLOSED] "
-                "session=%s "
-                "duration_ms=%.2f "
-                "elapsed_ms=%.2f",
+                "[DECODER_CLOSED] session=%s duration_ms=%.2f elapsed_ms=%.2f",
                 self.session_id,
-                self._duration_ms(
-                    close_component_start
-                ),
+                self._duration_ms(close_component_start),
                 self._elapsed_ms(),
             )
 
         except Exception:
-
             logger.exception(
-                "[DECODER_CLOSE_ERROR] "
-                "session=%s "
-                "elapsed_ms=%.2f",
+                "[DECODER_CLOSE_ERROR] session=%s elapsed_ms=%.2f",
                 self.session_id,
                 self._elapsed_ms(),
             )
@@ -2930,29 +2487,20 @@ class VoicePipeline:
         # ----------------------------------------------------
 
         try:
-
             close_component_start = self._now()
 
             await self.synthesizer.close()
 
             logger.debug(
-                "[SYNTHESIZER_CLOSED] "
-                "session=%s "
-                "duration_ms=%.2f "
-                "elapsed_ms=%.2f",
+                "[SYNTHESIZER_CLOSED] session=%s duration_ms=%.2f elapsed_ms=%.2f",
                 self.session_id,
-                self._duration_ms(
-                    close_component_start
-                ),
+                self._duration_ms(close_component_start),
                 self._elapsed_ms(),
             )
 
         except Exception:
-
             logger.exception(
-                "[SYNTHESIZER_CLOSE_ERROR] "
-                "session=%s "
-                "elapsed_ms=%.2f",
+                "[SYNTHESIZER_CLOSE_ERROR] session=%s elapsed_ms=%.2f",
                 self.session_id,
                 self._elapsed_ms(),
             )

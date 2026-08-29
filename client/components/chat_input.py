@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def render_chat_input():
     """Renders the chat input bar and handles the initial locking stage."""
     # disabled=st.session_state.processing instantly dims the bar when thinking

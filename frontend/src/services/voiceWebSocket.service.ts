@@ -33,238 +33,129 @@ export type VoiceWebSocketEvent =
       [key: string]: unknown;
     };
 
-
 type VoiceWebSocketCallbacks = {
   onOpen?: () => void;
 
-  onEvent?: (
-    event: VoiceWebSocketEvent
-  ) => void;
+  onEvent?: (event: VoiceWebSocketEvent) => void;
 
-  onError?: (
-    error: Error
-  ) => void;
+  onError?: (error: Error) => void;
 
   onClose?: () => void;
 };
 
-
 export class VoiceWebSocketService {
-
   private socket: WebSocket | null = null;
 
   private callbacks: VoiceWebSocketCallbacks = {};
 
-
   connect(
     sessionId: string,
-    callbacks: VoiceWebSocketCallbacks = {}
+    callbacks: VoiceWebSocketCallbacks = {},
   ): Promise<void> {
-
     this.callbacks = callbacks;
 
-    return new Promise(
-      (resolve, reject) => {
+    return new Promise((resolve, reject) => {
+      const backendUrl =
+        import.meta.env.VITE_PUBLIC_BACKEND_URL ||
+        import.meta.env.VITE_BACKEND_URL ||
+        "http://127.0.0.1:8000";
 
-        const backendUrl =
-          import.meta.env
-            .VITE_PUBLIC_BACKEND_URL ||
-          import.meta.env
-            .VITE_BACKEND_URL ||
-          "http://127.0.0.1:8000";
+      const wsUrl =
+        backendUrl.replace(/^http:/, "ws:").replace(/^https:/, "wss:") +
+        `/voice/ws`;
 
+      console.log("🔌 Connecting Voice WebSocket:", wsUrl);
 
-        const wsUrl =
-          backendUrl
-            .replace(/^http:/, "ws:")
-            .replace(/^https:/, "wss:")
-            + `/voice/ws`;
+      this.socket = new WebSocket(wsUrl);
 
+      this.socket.binaryType = "arraybuffer";
 
-        console.log(
-          "🔌 Connecting Voice WebSocket:",
-          wsUrl
-        );
+      this.socket.onopen = () => {
+        console.log("✅ Voice WebSocket connected");
 
+        this.sendJson({
+          type: "start",
+          session_id: sessionId,
+        });
 
-        this.socket =
-          new WebSocket(wsUrl);
+        this.callbacks.onOpen?.();
 
+        resolve();
+      };
 
-        this.socket.binaryType =
-          "arraybuffer";
+      this.socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
 
+          console.log("📨 Voice WS event:", data);
 
-        this.socket.onopen = () => {
+          this.callbacks.onEvent?.(data);
+        } catch (error) {
+          console.error("❌ Invalid WebSocket message:", error);
+        }
+      };
 
-          console.log(
-            "✅ Voice WebSocket connected"
-          );
+      this.socket.onerror = () => {
+        const error = new Error("Voice WebSocket connection failed.");
 
+        this.callbacks.onError?.(error);
 
-          this.sendJson({
-            type: "start",
-            session_id: sessionId,
-          });
+        reject(error);
+      };
 
+      this.socket.onclose = () => {
+        console.log("🔌 Voice WebSocket closed");
 
-          this.callbacks.onOpen?.();
+        this.callbacks.onClose?.();
 
-          resolve();
-        };
-
-
-        this.socket.onmessage = (
-          event
-        ) => {
-
-          try {
-
-            const data =
-              JSON.parse(
-                event.data
-              );
-
-            console.log(
-              "📨 Voice WS event:",
-              data
-            );
-
-            this.callbacks.onEvent?.(
-              data
-            );
-
-          } catch (error) {
-
-            console.error(
-              "❌ Invalid WebSocket message:",
-              error
-            );
-          }
-        };
-
-
-        this.socket.onerror = () => {
-
-          const error =
-            new Error(
-              "Voice WebSocket connection failed."
-            );
-
-          this.callbacks.onError?.(
-            error
-          );
-
-          reject(error);
-        };
-
-
-        this.socket.onclose = () => {
-
-          console.log(
-            "🔌 Voice WebSocket closed"
-          );
-
-          this.callbacks.onClose?.();
-
-          this.socket = null;
-        };
-      }
-    );
+        this.socket = null;
+      };
+    });
   }
 
-
-  sendAudio(
-    blob: Blob
-  ): void {
-
-    if (
-      !this.socket ||
-      this.socket.readyState !==
-        WebSocket.OPEN
-    ) {
-
-      console.warn(
-        "⚠️ WebSocket is not open."
-      );
+  sendAudio(blob: Blob): void {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      console.warn("⚠️ WebSocket is not open.");
 
       return;
     }
 
-
     this.socket.send(blob);
-
   }
 
-
   stopTurn(): void {
-
     this.sendJson({
       type: "stop",
     });
-
   }
 
-
   ping(): void {
-
     this.sendJson({
       type: "ping",
     });
-
   }
 
-
   close(): void {
-
     if (!this.socket) {
       return;
     }
 
-
-    if (
-      this.socket.readyState ===
-      WebSocket.OPEN
-    ) {
-
+    if (this.socket.readyState === WebSocket.OPEN) {
       this.socket.close();
-
     }
 
-
     this.socket = null;
-
   }
-
 
   isConnected(): boolean {
-
-    return (
-      this.socket?.readyState ===
-      WebSocket.OPEN
-    );
-
+    return this.socket?.readyState === WebSocket.OPEN;
   }
 
-
-  private sendJson(
-    data: unknown
-  ): void {
-
-    if (
-      !this.socket ||
-      this.socket.readyState !==
-        WebSocket.OPEN
-    ) {
-
+  private sendJson(data: unknown): void {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       return;
     }
 
-
-    this.socket.send(
-      JSON.stringify(data)
-    );
-
+    this.socket.send(JSON.stringify(data));
   }
-
 }

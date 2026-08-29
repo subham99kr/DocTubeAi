@@ -21,13 +21,11 @@ The transcription layer contract is:
 """
 
 import pytest
-
 from modules.voice.models import TranscriptionResult
 from modules.voice.transcription import (
     WhisperTranscriber,
     whisper_transcriber,
 )
-
 
 # ============================================================
 # Fixtures

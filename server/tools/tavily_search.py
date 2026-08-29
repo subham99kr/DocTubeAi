@@ -1,5 +1,6 @@
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 async def run_tavily_search(client, query: str, max_results: int = 3) -> str:

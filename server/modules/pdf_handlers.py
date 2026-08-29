@@ -1,12 +1,13 @@
+import logging
 import shutil
-import aiofiles
-import aiofiles.os  # i don't need this right now.. may require it later 
-from fastapi.concurrency import run_in_threadpool
-from fastapi import UploadFile,HTTPException
+import uuid
 from pathlib import Path
 from typing import List
-import logging
-import uuid
+
+import aiofiles
+import aiofiles.os  # i don't need this right now.. may require it later
+from fastapi import HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from global_modules.pg_pool import get_pg_pool
 
 logger = logging.getLogger(__name__)
@@ -16,17 +17,21 @@ BASE_UPLOAD_DIR = "./uploaded_pdfs"
 
 async def ensure_dir(path: str) -> None:
     """Run directory creation in a threadpool."""
+
     def create():
         Path(path).mkdir(parents=True, exist_ok=True)
-    await run_in_threadpool(create) 
+
+    await run_in_threadpool(create)
 
 
-async def unique_filepath(dest_dir: str, filename: str, session_id: str | None = None) -> str:
-   
+async def unique_filepath(
+    dest_dir: str, filename: str, session_id: str | None = None
+) -> str:
+
     dest = Path(dest_dir)
     if session_id:
-        dest = dest/session_id
-    
+        dest = dest / session_id
+
     await ensure_dir(str(dest))
 
     candidate = dest / filename
@@ -34,8 +39,9 @@ async def unique_filepath(dest_dir: str, filename: str, session_id: str | None =
     if await aiofiles.os.path.exists(str(candidate)):
         uniq = f"{Path(filename).stem}_{uuid.uuid4().hex[:6]}{Path(filename).suffix}"
         candidate = dest / uniq
-    
+
     return str(candidate.resolve())
+
 
 async def append_pdfs_to_db(session_id: str, filenames: List[str]):
     """
@@ -43,7 +49,7 @@ async def append_pdfs_to_db(session_id: str, filenames: List[str]):
     """
     # pool from your singleton
     pool = await get_pg_pool()
-    
+
     # array_cat merges the existing array with the new one.
     # COALESCE handles the edge case where the column might be NULL.
     query = """
@@ -53,15 +59,17 @@ async def append_pdfs_to_db(session_id: str, filenames: List[str]):
         DO UPDATE SET 
             pdfs_uploaded = array_cat(COALESCE(sessions.pdfs_uploaded, '{}'), EXCLUDED.pdfs_uploaded);
     """
-    
+
     try:
         async with pool.connection() as conn:
             async with conn.cursor() as cur:
-                await cur.execute(query, (session_id,filenames))
+                await cur.execute(query, (session_id, filenames))
 
-            await conn.commit()   # because of this the db table was not populating
-                # Connection context manager automatically commits if no exception occurs
-        logger.info(f"🟢Successfully appended {len(filenames)} files to session {session_id}")
+            await conn.commit()  # because of this the db table was not populating
+            # Connection context manager automatically commits if no exception occurs
+        logger.info(
+            f"🟢Successfully appended {len(filenames)} files to session {session_id}"
+        )
     except Exception as e:
         logger.error(f"🔴Failed to update sessions table: {e}", exc_info=True)
 
@@ -80,37 +88,32 @@ async def save_uploaded_files(files: List[UploadFile], session_id: str) -> List[
         # await upload.seek(0)
         if not upload.filename:
             continue
-        
 
-        safe_path = await unique_filepath(BASE_UPLOAD_DIR, upload.filename, session_id=session_id)
+        safe_path = await unique_filepath(
+            BASE_UPLOAD_DIR, upload.filename, session_id=session_id
+        )
 
         contents = await upload.read()
         if not contents:
             raise HTTPException(
-                status_code=400,
-                detail=f"Empty file received: {upload.filename}"
+                status_code=400, detail=f"Empty file received: {upload.filename}"
             )
 
-        async with aiofiles.open(safe_path, "wb") as out_f: 
+        async with aiofiles.open(safe_path, "wb") as out_f:
             await out_f.write(contents)
-        
 
         # await upload.seek(0)
 
         saved_path.append(safe_path)
         filenames_to_db.append(upload.filename)
-        logger.info(
-            "🟢Saved upload to %s (%d bytes)",
-            safe_path,
-            len(contents)
-        )
+        logger.info("🟢Saved upload to %s (%d bytes)", safe_path, len(contents))
 
         # close underlying file
         try:
             await upload.close()
         except Exception:
             pass
-        
+
         logger.info("🟢Saved upload to %s", safe_path)
 
     if filenames_to_db:
@@ -129,10 +132,11 @@ async def delete_local_files(paths: List[str]) -> None:
         except Exception as e:
             logger.error(f"🔴 Failed to delete {p}: {e}")
 
+
 async def delete_session_directory(session_id: str) -> None:
     """Deletes the entire directory for a session and all its contents."""
     session_path = Path(BASE_UPLOAD_DIR) / session_id
-    
+
     if session_path.exists() and session_path.is_dir():
         try:
             # shutil.rmtree is blocking, so we run it in the threadpool

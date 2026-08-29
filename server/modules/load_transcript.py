@@ -1,15 +1,15 @@
-
 import logging
-from typing import Optional
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
-from global_modules.pg_pool import get_pg_pool
-
-from modules.get_transcript import transcrpition_extractor, get_video_title
-from mongodb.insert_chunks import insert_chunks
 from datetime import datetime
+from typing import Optional
 
 from dotenv import load_dotenv
+from global_modules.pg_pool import get_pg_pool
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from mongodb.insert_chunks import insert_chunks
+
+from modules.get_transcript import get_video_title, transcrpition_extractor
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -17,20 +17,17 @@ logger.setLevel(logging.INFO)
 
 import json
 
+
 async def append_link_to_db(session_id: str, url: str, title: str):
     """
     Appends a single {url, title} object to the url_links JSONB column in Postgres.
     """
     pool = await get_pg_pool()
-    
-    # We wrap the single dict in a list [] so the || operator 
+
+    # We wrap the single dict in a list [] so the || operator
     # performs an array concatenation in Postgres.
-    new_link = {
-        "url": url, 
-        "title": title,
-        "added_at": datetime.now().isoformat()
-    }
-    
+    new_link = {"url": url, "title": title, "added_at": datetime.now().isoformat()}
+
     new_link_json = json.dumps(new_link)
 
     query = """
@@ -46,32 +43,32 @@ async def append_link_to_db(session_id: str, url: str, title: str):
             url_links = COALESCE(sessions.url_links, '[]'::jsonb) || jsonb_build_array(%s::jsonb),
             last_activity = NOW();
     """
-    
+
     try:
         async with pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(query, (session_id, new_link_json, new_link_json))
             await conn.commit()
-            
+
         logger.info(f"🟢 Successfully appended link to session {session_id}: {title}")
     except Exception as e:
         logger.error(f"🔴 Failed to update sessions table for link: {e}", exc_info=True)
+
 
 async def load_transcript(
     youtube_url: str,
     session_id: str,
     chunk_size: int = 1000,
-    chunk_overlap: int = 100, 
+    chunk_overlap: int = 100,
     raise_on_empty: bool = False,
 ) -> Optional[bool]:
-    
+
     try:
         # 1) Fetch data in threadpool to avoid blocking the event loop
         # We run these together as a single blocking task or separately
         text = await transcrpition_extractor(youtube_url)
         title = await get_video_title(youtube_url)
 
-         
     except Exception as exc:
         logger.warning("Failed to fetch transcript for %s: %s", youtube_url, exc)
         if raise_on_empty:
@@ -96,9 +93,9 @@ async def load_transcript(
 
     # 3) Split into chunks (CPU bound, usually fast enough to stay sync)
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size, 
+        chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", " ", ""]
+        separators=["\n\n", "\n", " ", ""],
     )
     chunks = splitter.split_documents([doc])
 
@@ -108,5 +105,5 @@ async def load_transcript(
     logger.info("🟢 insert_chunks function completed for transcript chunks")
 
     await append_link_to_db(session_id, youtube_url, title)
-    
+
     return title

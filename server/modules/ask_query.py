@@ -1,26 +1,22 @@
-import os
 import asyncio
 import logging
-from typing import (Dict,Any,AsyncGenerator)
+import os
+from typing import Any, AsyncGenerator, Dict
+
 from dotenv import load_dotenv
-
-from tavily import AsyncTavilyClient
-
+from global_modules.http_client import get_http_client
+from global_modules.pg_pool import get_pg_pool
+from graph.graph_builder import RAGGraphBuilder
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-
-from graph.graph_builder import RAGGraphBuilder
+from tavily import AsyncTavilyClient
 
 from modules.llm import (
+    get_rag_model,
     get_router_model,
     get_simple_chat_model,
     get_tool_model,
-    get_rag_model,
 )
-
-from global_modules.pg_pool import  get_pg_pool
-from global_modules.http_client import get_http_client
-
 
 # =====================================================
 # LOGGING
@@ -52,12 +48,14 @@ _TAVILY_CLIENT = None
 # INITIAL STATE
 # =====================================================
 
-def build_initial_state(query: str, response_mode: str = "chat",
+
+def build_initial_state(
+    query: str,
+    response_mode: str = "chat",
 ):
 
     return {
         "messages": [HumanMessage(content=query)],
-
         "query": query,
         "response_mode": response_mode,
         "route": "",
@@ -77,6 +75,7 @@ def build_initial_state(query: str, response_mode: str = "chat",
 # =====================================================
 # GLOBAL INIT
 # =====================================================
+
 
 async def global_init():
 
@@ -99,35 +98,18 @@ async def global_init():
     # Graph singleton
     # -----------------------------------------
     if _COMPILED_GRAPH is None:
-        _CHECKPOINTER = AsyncPostgresSaver(
-            pool
-        )
+        _CHECKPOINTER = AsyncPostgresSaver(pool)
 
         builder = RAGGraphBuilder(
-            router_llm_factory=(
-                get_router_model
-            ),
-
-            simple_chat_llm_factory=(
-                get_simple_chat_model
-            ),
-
-            tool_llm_factory=(
-                get_tool_model
-            ),
-
-            rag_llm_factory=(
-                get_rag_model
-            ),
+            router_llm_factory=(get_router_model),
+            simple_chat_llm_factory=(get_simple_chat_model),
+            tool_llm_factory=(get_tool_model),
+            rag_llm_factory=(get_rag_model),
         )
 
-        _COMPILED_GRAPH = builder.compile(
-            checkpointer=_CHECKPOINTER
-        )
+        _COMPILED_GRAPH = builder.compile(checkpointer=_CHECKPOINTER)
 
-        logger.info(
-            "✅ LangGraph Compiled"
-        )
+        logger.info("✅ LangGraph Compiled")
 
     return _COMPILED_GRAPH
 
@@ -135,6 +117,7 @@ async def global_init():
 # =====================================================
 # ASK GRAPH
 # =====================================================
+
 
 async def ask_with_graph(
     obj: Dict[str, Any],
@@ -150,23 +133,15 @@ async def ask_with_graph(
     )
 
     try:
-
         # -----------------------------------------
         # Validate query
         # -----------------------------------------
 
         if not query.strip():
-
-            logger.warning(
-                f"Empty query received "
-                f"for session {session_id}"
-            )
+            logger.warning(f"Empty query received for session {session_id}")
 
             return {
-                "answer": (
-                    "The query cannot "
-                    "be empty."
-                ),
+                "answer": ("The query cannot be empty."),
                 "code": 400,
             }
 
@@ -181,26 +156,15 @@ async def ask_with_graph(
         config = {
             "configurable": {
                 "thread_id": session_id,
-
-                "tavily_client":
-                    _TAVILY_CLIENT,
-
-                "http_client":
-                    http_client,
-
-                "session_id":
-                    session_id,
+                "tavily_client": _TAVILY_CLIENT,
+                "http_client": http_client,
+                "session_id": session_id,
             }
         }
 
-        initial_state = build_initial_state(
-            query
-        )
+        initial_state = build_initial_state(query)
 
-        logger.info(
-            f"🦜 Invoking graph "
-            f"for session: {session_id}"
-        )
+        logger.info(f"🦜 Invoking graph for session: {session_id}")
 
         # -----------------------------------------
         # Execute graph
@@ -214,9 +178,7 @@ async def ask_with_graph(
             timeout=90,
         )
 
-        logger.info(
-            "✅ Graph invocation successful"
-        )
+        logger.info("✅ Graph invocation successful")
 
         # -----------------------------------------
         # Extract final answer
@@ -227,13 +189,9 @@ async def ask_with_graph(
             [],
         )
 
-        final_answer = (
-            "I'm sorry, I couldn't "
-            "generate a response."
-        )
+        final_answer = "I'm sorry, I couldn't generate a response."
 
         for msg in reversed(messages):
-
             if (
                 msg.type == "ai"
                 and not getattr(
@@ -243,10 +201,7 @@ async def ask_with_graph(
                 )
                 and msg.content
             ):
-
-                final_answer = (
-                    msg.content
-                )
+                final_answer = msg.content
 
                 break
 
@@ -258,40 +213,23 @@ async def ask_with_graph(
         }
 
     except asyncio.TimeoutError:
-
-        logger.error(
-            f"⏰ Graph timeout "
-            f"for session {session_id}"
-        )
+        logger.error(f"⏰ Graph timeout for session {session_id}")
 
         return {
-            "answer": (
-                "The request took too "
-                "long to complete."
-            ),
-
+            "answer": ("The request took too long to complete."),
             "status": "timeout",
-
             "code": 408,
         }
 
     except Exception as e:
-
         logger.error(
-            f"🔴 Error in ask_with_graph "
-            f"for session {session_id}: "
-            f"{str(e)}",
+            f"🔴 Error in ask_with_graph for session {session_id}: {str(e)}",
             exc_info=True,
         )
 
         return {
-            "answer": (
-                "An internal error "
-                "occurred during processing."
-            ),
-
+            "answer": ("An internal error occurred during processing."),
             "status": "error",
-
             "code": 500,
         }
 
@@ -300,17 +238,21 @@ async def ask_with_graph(
 # STREAM GRAPH
 # =====================================================
 
+
 async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, None]:
 
-    query = obj.get( "users_query","",)
+    query = obj.get(
+        "users_query",
+        "",
+    )
     session_id = obj.get("session_id")
 
     if not query.strip() or not session_id:
-        yield{
+        yield {
             "type": "error",
             "data": "The query cannot be empty.",
         }
-        return 
+        return
 
     await global_init()
 
@@ -319,44 +261,28 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
     config = {
         "configurable": {
             "thread_id": session_id,
-
-            "tavily_client":
-                _TAVILY_CLIENT,
-
-            "http_client":
-                http_client,
-
-            "session_id":
-                session_id,
+            "tavily_client": _TAVILY_CLIENT,
+            "http_client": http_client,
+            "session_id": session_id,
         }
     }
 
-    initial_state = build_initial_state(
-        query
-    )
+    initial_state = build_initial_state(query)
 
     try:
-
-        async for event in (
-            _COMPILED_GRAPH.astream_events(
-                initial_state,
-                config,
-                version="v2",
-            )
+        async for event in _COMPILED_GRAPH.astream_events(
+            initial_state,
+            config,
+            version="v2",
         ):
-
-            event_type = event.get(
-                "event"
-            )
+            event_type = event.get("event")
 
             metadata = event.get(
                 "metadata",
                 {},
             )
 
-            node_name = metadata.get(
-                "langgraph_node"
-            )
+            node_name = metadata.get("langgraph_node")
 
             # =====================================
             # NODE STATUS
@@ -366,88 +292,56 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
                 "on_node_start",
                 "on_chain_start",
             ]:
-
                 mapping = {
                     "router": "Routing query...",
-
                     "tool_call": "Planning retrieval...",
-
                     "vector_search": "Searching uploaded documents...",
-
                     "internet_search": "Searching the internet...",
-
                     "web_scraper": "Reading webpage content...",
-
                     "reranker": "Ranking retrieved evidence...",
-
                     "retrieval_evaluator": "Evaluating evidence quality...",
-
                     "rag_chatbot": "Synthesizing response...",
-
                     "simple_chat": "Generating response...",
                 }
 
                 if node_name in mapping:
-
                     yield {
                         "type": "status",
-
-                        "data":
-                            mapping[node_name],
+                        "data": mapping[node_name],
                     }
 
             # =====================================
             # TOKEN STREAMING
             # =====================================
 
-            elif (
-                event_type
-                == "on_chat_model_stream"
-                and node_name in [
-                    "simple_chat",
-                    "rag_chatbot",
-                ]
-            ):
+            elif event_type == "on_chat_model_stream" and node_name in [
+                "simple_chat",
+                "rag_chatbot",
+            ]:
+                chunk = event.get(
+                    "data",
+                    {},
+                ).get("chunk")
 
-                chunk = (
-                    event.get(
-                        "data",
-                        {},
-                    ).get("chunk")
-                )
-
-                if (
-                    chunk
-                    and chunk.content
-                ):
-
+                if chunk and chunk.content:
                     yield {
                         "type": "token",
-
-                        "data":
-                            chunk.content,
+                        "data": chunk.content,
                     }
 
             # =====================================
             # GRAPH COMPLETION
             # =====================================
 
-            elif (
-                event_type
-                == "on_node_end"
-                and node_name == "prune"
-            ):
-
+            elif event_type == "on_node_end" and node_name == "prune":
                 yield {
                     "type": "done",
-
                     "data": "",
                 }
 
                 return
 
     except Exception as e:
-
         logger.error(
             f"🔴 Stream Error: {str(e)}",
             exc_info=True,
@@ -455,9 +349,5 @@ async def ask_with_graph_stream(obj: Dict[str, Any]) -> AsyncGenerator[dict, Non
 
         yield {
             "type": "error",
-
-            "data": (
-                "Stream encountered "
-                "an error."
-            ),
+            "data": ("Stream encountered an error."),
         }

@@ -1,11 +1,11 @@
 import streamlit as st
-from state.session_state import initialize_session
-from components.sidebar import render_sidebar
-from components.chat_interface import render_chat_window
 from api.auth_client import check_auth_callback
 from components.chat_input import render_chat_input
+from components.chat_interface import render_chat_window
 from components.context_panel import render_context_bar
+from components.sidebar import render_sidebar
 from modules.chat_handler import handle_chat_logic
+from state.session_state import initialize_session
 
 st.set_page_config(page_title="DocTubeAi", page_icon="📗", layout="wide")
 

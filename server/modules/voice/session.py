@@ -42,15 +42,12 @@ from .events import (
     user_speech_started,
     user_turn_complete,
 )
-
 from .models import (
     SpeechStarted,
     TranscriptChanged,
     TurnCompleted,
 )
-
 from .pipeline import VoicePipeline
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +56,8 @@ logger = logging.getLogger(__name__)
 # VoiceSession
 # ============================================================
 
-class VoiceSession:
 
+class VoiceSession:
     def __init__(
         self,
         websocket: WebSocket,
@@ -81,47 +78,17 @@ class VoiceSession:
         # WebSocket events.
         # ----------------------------------------------------
 
-        self.pipeline = (
-            pipeline
-            or VoicePipeline(
-                session_id=session_id,
-
-                on_speech_started=(
-                    self._on_speech_started
-                ),
-
-                on_transcript_changed=(
-                    self._on_transcript_changed
-                ),
-
-                on_turn_complete=(
-                    self._on_turn_complete
-                ),
-
-                on_assistant_started=(
-                    self._on_assistant_started
-                ),
-
-                on_assistant_status=(
-                    self._on_assistant_status
-                ),
-
-                on_assistant_text=(
-                    self._on_assistant_text
-                ),
-
-                on_assistant_audio=(
-                    self._on_assistant_audio
-                ),
-
-                on_assistant_completed=(
-                    self._on_assistant_completed
-                ),
-
-                on_assistant_error=(
-                    self._on_assistant_error
-                ),
-            )
+        self.pipeline = pipeline or VoicePipeline(
+            session_id=session_id,
+            on_speech_started=(self._on_speech_started),
+            on_transcript_changed=(self._on_transcript_changed),
+            on_turn_complete=(self._on_turn_complete),
+            on_assistant_started=(self._on_assistant_started),
+            on_assistant_status=(self._on_assistant_status),
+            on_assistant_text=(self._on_assistant_text),
+            on_assistant_audio=(self._on_assistant_audio),
+            on_assistant_completed=(self._on_assistant_completed),
+            on_assistant_error=(self._on_assistant_error),
         )
 
     # ========================================================
@@ -137,16 +104,11 @@ class VoiceSession:
             return
 
         try:
-
-            await self.websocket.send_json(
-                payload
-            )
+            await self.websocket.send_json(payload)
 
         except Exception:
-
             logger.exception(
-                "Failed to send voice event "
-                "session=%s",
+                "Failed to send voice event session=%s",
                 self.session_id,
             )
 
@@ -172,16 +134,13 @@ class VoiceSession:
         )
 
         try:
-
             await self.pipeline.start()
 
         except Exception:
-
             self.started = False
 
             logger.exception(
-                "Failed to start voice pipeline "
-                "session=%s",
+                "Failed to start voice pipeline session=%s",
                 self.session_id,
             )
 
@@ -194,9 +153,7 @@ class VoiceSession:
 
             raise
 
-        await self.send(
-            session_started()
-        )
+        await self.send(session_started())
 
         logger.info(
             "Voice session started session=%s",
@@ -222,16 +179,11 @@ class VoiceSession:
             return
 
         try:
-
-            await self.pipeline.receive_audio(
-                audio_chunk
-            )
+            await self.pipeline.receive_audio(audio_chunk)
 
         except ValueError as exc:
-
             logger.warning(
-                "Audio limit exceeded "
-                "session=%s",
+                "Audio limit exceeded session=%s",
                 self.session_id,
             )
 
@@ -245,10 +197,8 @@ class VoiceSession:
             await self.close()
 
         except Exception:
-
             logger.exception(
-                "Failed to process voice audio "
-                "session=%s",
+                "Failed to process voice audio session=%s",
                 self.session_id,
             )
 
@@ -271,11 +221,7 @@ class VoiceSession:
         if not self.running:
             return
 
-        await self.send(
-            user_speech_started(
-                event.turn_id
-            )
-        )
+        await self.send(user_speech_started(event.turn_id))
 
     # ========================================================
     # Partial transcript
@@ -334,11 +280,7 @@ class VoiceSession:
         if not self.running:
             return
 
-        await self.send(
-            assistant_started(
-                turn_id
-            )
-        )
+        await self.send(assistant_started(turn_id))
 
     # ========================================================
     # Assistant status
@@ -359,8 +301,7 @@ class VoiceSession:
             return
 
         logger.debug(
-            "Sending assistant status "
-            "session=%s turn=%s status=%r",
+            "Sending assistant status session=%s turn=%s status=%r",
             self.session_id,
             turn_id,
             message,
@@ -431,11 +372,7 @@ class VoiceSession:
         if not self.running:
             return
 
-        await self.send(
-            assistant_completed(
-                turn_id
-            )
-        )
+        await self.send(assistant_completed(turn_id))
 
     # ========================================================
     # Assistant error
@@ -448,8 +385,7 @@ class VoiceSession:
     ) -> None:
 
         logger.error(
-            "Assistant failed "
-            "session=%s turn=%s",
+            "Assistant failed session=%s turn=%s",
             self.session_id,
             turn_id,
             exc_info=(
@@ -486,14 +422,11 @@ class VoiceSession:
         self.running = False
 
         try:
-
             await self.pipeline.close()
 
         except Exception:
-
             logger.exception(
-                "Failed to close voice pipeline "
-                "session=%s",
+                "Failed to close voice pipeline session=%s",
                 self.session_id,
             )
 

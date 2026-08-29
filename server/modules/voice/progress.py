@@ -1,5 +1,4 @@
 class VoiceProgressTracker:
-
     def __init__(self):
         self.phase = None
         self.spoken_phases = set()
@@ -24,17 +23,10 @@ class VoiceProgressTracker:
     def _message_for(self, phase):
 
         messages = {
-            "document_search":
-                "I'm checking your documents first.",
-
-            "web_search":
-                "I'm cross-checking that with the web.",
-
-            "verification":
-                "I'm rechecking the information before I answer.",
-
-            "answer":
-                None,
+            "document_search": "I'm checking your documents first.",
+            "web_search": "I'm cross-checking that with the web.",
+            "verification": "I'm rechecking the information before I answer.",
+            "answer": None,
         }
 
         return messages.get(phase)

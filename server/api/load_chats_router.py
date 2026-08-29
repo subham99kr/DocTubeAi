@@ -1,33 +1,33 @@
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
-from typing import List,Dict
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from global_modules.pg_pool import get_pg_pool
-from modules.verify_session import verify_and_initialize_session
-from auth.dependencies import get_current_user_optional
 import logging
+from typing import Dict, List
+
+from auth.dependencies import get_current_user_optional
+from fastapi import APIRouter, Depends
+from global_modules.pg_pool import get_pg_pool
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from modules.verify_session import verify_and_initialize_session
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/chats",
-    tags=["Chats"]
-)
+router = APIRouter(prefix="/chats", tags=["Chats"])
+
 
 class ChatMessage(BaseModel):
     role: str
     content: str
+
 
 class HistoryResponse(BaseModel):
     session_id: str = []
     history: List[ChatMessage] = []
     pdfs_uploaded: List[str] = []
     url_links: List[Dict[str, str]] = []
-    
+
+
 @router.get("/history/{session_id}", response_model=HistoryResponse)
 async def get_chat_history(
-    session_id: str,
-    oauth_id: str = Depends(get_current_user_optional)
+    session_id: str, oauth_id: str = Depends(get_current_user_optional)
 ):
     # 1. Verification logic (Keep this for security)
     await verify_and_initialize_session(session_id, oauth_id)
@@ -37,7 +37,7 @@ async def get_chat_history(
 
     try:
         pool = await get_pg_pool()
-        
+
         # 2. Fetch Session Metadata (PDFs & URLs)
         meta_query = """
             SELECT pdfs_uploaded, url_links 
@@ -54,17 +54,21 @@ async def get_chat_history(
 
         # 3. Fetch Chat History (LangGraph Checkpoint)
         saver = AsyncPostgresSaver(pool)
-        checkpoint_tuple = await saver.aget_tuple({"configurable": {"thread_id": session_id}})
+        checkpoint_tuple = await saver.aget_tuple(
+            {"configurable": {"thread_id": session_id}}
+        )
 
         if checkpoint_tuple:
-            raw_messages = checkpoint_tuple.checkpoint.get("channel_values", {}).get("messages", [])
+            raw_messages = checkpoint_tuple.checkpoint.get("channel_values", {}).get(
+                "messages", []
+            )
             formatted_history = [
                 ChatMessage(
                     role="user" if msg.type == "human" else "assistant",
-                    content=msg.content.strip()
+                    content=msg.content.strip(),
                 )
-                for msg in raw_messages 
-                if msg.type in ['human', 'ai'] and msg.content.strip()
+                for msg in raw_messages
+                if msg.type in ["human", "ai"] and msg.content.strip()
             ]
 
         # 4. Always return a valid object, even if lists are empty
@@ -72,7 +76,7 @@ async def get_chat_history(
             session_id=session_id,
             history=formatted_history,
             pdfs_uploaded=pdfs,
-            url_links=urls
+            url_links=urls,
         )
 
     except Exception as e:

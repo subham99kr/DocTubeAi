@@ -34,7 +34,6 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-
 from modules.voice.models import (
     SpeechStarted,
     TranscriptChanged,
@@ -46,7 +45,6 @@ from modules.voice.vad import (
     VADEvent,
     VADEventType,
 )
-
 
 # ============================================================
 # Fake components

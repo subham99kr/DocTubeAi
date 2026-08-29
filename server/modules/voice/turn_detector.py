@@ -67,7 +67,6 @@ from .models import (
 )
 from .vad import VADEvent, VADEventType
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -172,19 +171,10 @@ class TurnDetector:
         """
 
         async with self._lock:
-
-            if (
-                event.type
-                == VADEventType.SPEECH_STARTED
-            ):
-
+            if event.type == VADEventType.SPEECH_STARTED:
                 return self._handle_speech_started()
 
-            if (
-                event.type
-                == VADEventType.SPEECH_ENDED
-            ):
-
+            if event.type == VADEventType.SPEECH_ENDED:
                 return self._handle_speech_ended()
 
             return []
@@ -204,10 +194,8 @@ class TurnDetector:
         """
 
         if self.state.active:
-
             logger.debug(
-                "Ignoring duplicate speech start "
-                "turn=%s",
+                "Ignoring duplicate speech start turn=%s",
                 self.state.turn_id,
             )
 
@@ -226,8 +214,7 @@ class TurnDetector:
         turn_id = self.state.turn_id
 
         logger.info(
-            "Speech started "
-            "turn=%s",
+            "Speech started turn=%s",
             turn_id,
         )
 
@@ -259,17 +246,14 @@ class TurnDetector:
             return []
 
         async with self._lock:
-
             # ------------------------------------------------
             # Whisper output without an active speech turn
             # cannot safely be associated with a conversation.
             # ------------------------------------------------
 
             if not self.state.active:
-
                 logger.debug(
-                    "Ignoring transcript without "
-                    "active turn: %r",
+                    "Ignoring transcript without active turn: %r",
                     transcript,
                 )
 
@@ -282,11 +266,7 @@ class TurnDetector:
             # same transcript repeatedly.
             # ------------------------------------------------
 
-            if (
-                transcript
-                == self.state.transcript
-            ):
-
+            if transcript == self.state.transcript:
                 return []
 
             self.state.transcript = transcript
@@ -294,8 +274,7 @@ class TurnDetector:
             turn_id = self.state.turn_id
 
             logger.debug(
-                "Transcript changed "
-                "turn=%s text=%r",
+                "Transcript changed turn=%s text=%r",
                 turn_id,
                 transcript,
             )
@@ -330,11 +309,7 @@ class TurnDetector:
         """
 
         if not self.state.active:
-
-            logger.debug(
-                "Ignoring speech end without "
-                "an active turn."
-            )
+            logger.debug("Ignoring speech end without an active turn.")
 
             return []
 
@@ -357,10 +332,8 @@ class TurnDetector:
         # ----------------------------------------------------
 
         if not final_text:
-
             logger.debug(
-                "Dropping empty turn "
-                "turn=%s",
+                "Dropping empty turn turn=%s",
                 turn_id,
             )
 
@@ -379,8 +352,7 @@ class TurnDetector:
         )
 
         logger.info(
-            "Turn completed "
-            "turn=%s text=%r",
+            "Turn completed turn=%s text=%r",
             turn_id,
             final_text,
         )
@@ -391,9 +363,7 @@ class TurnDetector:
 
         self.state.transcript = ""
 
-        return [
-            completed
-        ]
+        return [completed]
 
     # ========================================================
     # State
@@ -438,9 +408,6 @@ class TurnDetector:
         """
 
         async with self._lock:
-
             self.state = TurnState()
 
-        logger.debug(
-            "Turn detector reset."
-        )
+        logger.debug("Turn detector reset.")

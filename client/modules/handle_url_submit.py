@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def handle_url_submit(url):
     """Submits a URL and appends the metadata object to local state."""
     from api.upload_client import load_transcript_api

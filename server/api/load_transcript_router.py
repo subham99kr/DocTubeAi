@@ -1,30 +1,28 @@
 import logging
 from typing import Optional
 
+from auth.dependencies import get_current_user_optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-
+from modules.load_transcript import load_transcript
 from modules.verify_session import verify_and_initialize_session
-from auth.dependencies import get_current_user_optional
-from modules.load_transcript import load_transcript 
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/transcripts",
-    tags=["Transcripts"]
-)
+router = APIRouter(prefix="/transcripts", tags=["Transcripts"])
+
 
 class TranscriptRequest(BaseModel):
     url: str
     session_id: str
 
+
 # --- Router Endpoint ---
 @router.post("/load")
 async def load_transcripts_endpoint(
-    request_data: TranscriptRequest, 
-    oauth_id: Optional[str] = Depends(get_current_user_optional)
+    request_data: TranscriptRequest,
+    oauth_id: Optional[str] = Depends(get_current_user_optional),
 ):
     """
     JSON-based endpoint to load a YouTube transcript into a session.
@@ -35,15 +33,19 @@ async def load_transcripts_endpoint(
 
     # 1. Security & Lifecycle check (Updates last_activity)
     await verify_and_initialize_session(session_id, oauth_id)
-    
+
     try:
         # 2. Extract, Ingest, and Update DB
         # This function now handles: extracting text -> splitting -> MongoDB -> Postgres update
         video_title = await load_transcript(url, session_id=session_id)
 
         return JSONResponse(
-            status_code=200, 
-            content={"status": "Success", "session_id": session_id, "title":video_title}
+            status_code=200,
+            content={
+                "status": "Success",
+                "session_id": session_id,
+                "title": video_title,
+            },
         )
 
     except HTTPException as he:
@@ -52,6 +54,8 @@ async def load_transcripts_endpoint(
     except Exception as e:
         logger.exception("Failed to load transcript")
         return JSONResponse(
-            status_code=500, 
-            content={"error": "An internal error occurred while processing the transcript"}
+            status_code=500,
+            content={
+                "error": "An internal error occurred while processing the transcript"
+            },
         )

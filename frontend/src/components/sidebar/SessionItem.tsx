@@ -4,11 +4,7 @@ type Props = {
   onClick: () => void;
 };
 
-export default function SessionItem({
-  title,
-  active,
-  onClick,
-}: Props) {
+export default function SessionItem({ title, active, onClick }: Props) {
   return (
     <button
       onClick={onClick}
@@ -18,9 +14,7 @@ export default function SessionItem({
           : "bg-[#1a1d24] border-[#30363d] hover:bg-[#222733]"
       }`}
     >
-      <p className="truncate text-sm">
-        {title}
-      </p>
+      <p className="truncate text-sm">{title}</p>
     </button>
   );
 }

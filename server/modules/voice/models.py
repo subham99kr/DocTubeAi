@@ -17,7 +17,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, Optional
 
-
 # ============================================================
 # Audio
 # ============================================================
@@ -295,9 +294,7 @@ class VoicePipelineState:
 
     session_id: str
 
-    status: VoicePipelineStatus = (
-        VoicePipelineStatus.CREATED
-    )
+    status: VoicePipelineStatus = VoicePipelineStatus.CREATED
 
     # --------------------------------------------------------
     # User turn

@@ -1,10 +1,11 @@
 import asyncio
+import json  # For clean printing at the end
 import os
 import selectors
-import json # For clean printing at the end
+
 from dotenv import load_dotenv
-from psycopg_pool import AsyncConnectionPool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from psycopg_pool import AsyncConnectionPool
 
 load_dotenv()
 DB_URL = os.getenv("POSTGRES_DB_URL") 

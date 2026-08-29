@@ -31,7 +31,6 @@ import os
 from tempfile import NamedTemporaryFile
 from typing import Optional
 
-
 from .config import (
     AUDIO_SUFFIX,
     MAX_AUDIO_BYTES,
@@ -108,11 +107,8 @@ class AudioBuffer:
         """
 
         async with self._lock:
-
             if self._closed:
-                raise RuntimeError(
-                    "Cannot start a closed AudioBuffer."
-                )
+                raise RuntimeError("Cannot start a closed AudioBuffer.")
 
             if self._audio_file is not None:
                 return
@@ -151,16 +147,11 @@ class AudioBuffer:
             return
 
         async with self._lock:
-
             if self._closed:
-                raise RuntimeError(
-                    "AudioBuffer is closed."
-                )
+                raise RuntimeError("AudioBuffer is closed.")
 
             if self._audio_file is None:
-                raise RuntimeError(
-                    "AudioBuffer has not been started."
-                )
+                raise RuntimeError("AudioBuffer has not been started.")
 
             chunk_size = len(audio_chunk)
 
@@ -168,13 +159,8 @@ class AudioBuffer:
             # Enforce maximum utterance size.
             # ------------------------------------------------
 
-            if (
-                self._audio_bytes + chunk_size
-                > MAX_AUDIO_BYTES
-            ):
-                raise ValueError(
-                    "Maximum voice audio size exceeded."
-                )
+            if self._audio_bytes + chunk_size > MAX_AUDIO_BYTES:
+                raise ValueError("Maximum voice audio size exceeded.")
 
             # ------------------------------------------------
             # Append audio.
@@ -204,7 +190,6 @@ class AudioBuffer:
         """
 
         async with self._lock:
-
             if self._closed:
                 return None
 
@@ -220,7 +205,6 @@ class AudioBuffer:
             snapshot_path: Optional[str] = None
 
             try:
-
                 self._audio_file.flush()
 
                 snapshot = NamedTemporaryFile(
@@ -239,17 +223,12 @@ class AudioBuffer:
                     self.audio_path,
                     "rb",
                 ) as source:
-
                     with open(
                         snapshot_path,
                         "wb",
                     ) as destination:
-
                         while True:
-
-                            data = source.read(
-                                1024 * 1024
-                            )
+                            data = source.read(1024 * 1024)
 
                             if not data:
                                 break
@@ -259,11 +238,7 @@ class AudioBuffer:
                 return snapshot_path
 
             except Exception:
-
-                if (
-                    snapshot_path
-                    and os.path.exists(snapshot_path)
-                ):
+                if snapshot_path and os.path.exists(snapshot_path):
                     try:
                         os.remove(snapshot_path)
                     except OSError:
@@ -287,7 +262,6 @@ class AudioBuffer:
         """
 
         async with self._lock:
-
             if self._closed:
                 return
 
@@ -296,7 +270,6 @@ class AudioBuffer:
             # ------------------------------------------------
 
             if self._audio_file is not None:
-
                 try:
                     self._audio_file.close()
                 except Exception:
@@ -309,7 +282,6 @@ class AudioBuffer:
             # ------------------------------------------------
 
             if self.audio_path:
-
                 try:
                     os.remove(self.audio_path)
 
@@ -371,7 +343,6 @@ class AudioBuffer:
         """
 
         async with self._lock:
-
             if self._closed:
                 return
 
@@ -382,7 +353,6 @@ class AudioBuffer:
             # ------------------------------------------------
 
             if self._audio_file is not None:
-
                 try:
                     self._audio_file.close()
                 except Exception:
@@ -395,7 +365,6 @@ class AudioBuffer:
             # ------------------------------------------------
 
             if self.audio_path:
-
                 try:
                     os.remove(self.audio_path)
 

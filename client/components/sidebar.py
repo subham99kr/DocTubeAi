@@ -1,8 +1,10 @@
-import streamlit as st
 import uuid
+
+import streamlit as st
 from api.auth_client import render_login
 from api.home_client import load_home
-from modules.switch_session import switch_session 
+from modules.switch_session import switch_session
+
 # from modules.cookie_helper import clear_auth_cookies
 
 def render_sidebar():

@@ -40,9 +40,7 @@ from modules.voice.config import (
     WHISPER_LANGUAGE,
     WHISPER_MODEL,
 )
-
 from modules.voice.models import TranscriptionResult
-
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +75,6 @@ async def get_whisper_model() -> WhisperModel:
 
     # Only one coroutine can initialize the model.
     async with _whisper_model_lock:
-
         # Double-check after acquiring the lock.
         #
         # Another coroutine may have loaded the model
@@ -86,8 +83,7 @@ async def get_whisper_model() -> WhisperModel:
             return _whisper_model
 
         logger.info(
-            "Loading Faster-Whisper model "
-            "model=%s device=%s compute_type=%s",
+            "Loading Faster-Whisper model model=%s device=%s compute_type=%s",
             WHISPER_MODEL,
             WHISPER_DEVICE,
             WHISPER_COMPUTE_TYPE,
@@ -100,9 +96,7 @@ async def get_whisper_model() -> WhisperModel:
             compute_type=WHISPER_COMPUTE_TYPE,
         )
 
-        logger.info(
-            "Faster-Whisper model loaded."
-        )
+        logger.info("Faster-Whisper model loaded.")
 
         return _whisper_model
 
@@ -156,11 +150,8 @@ class WhisperTranscriber:
         """
 
         async with self._lock:
-
             if self._closed:
-                raise RuntimeError(
-                    "Cannot start a closed transcriber."
-                )
+                raise RuntimeError("Cannot start a closed transcriber.")
 
             if self._started:
                 return
@@ -192,7 +183,6 @@ class WhisperTranscriber:
         """
 
         async with self._lock:
-
             if self._closed:
                 return
 
@@ -227,31 +217,21 @@ class WhisperTranscriber:
         """
 
         if self._closed:
-            raise RuntimeError(
-                "Cannot transcribe with a closed transcriber."
-            )
+            raise RuntimeError("Cannot transcribe with a closed transcriber.")
 
         if not self._started:
-            raise RuntimeError(
-                "Transcriber has not been started."
-            )
+            raise RuntimeError("Transcriber has not been started.")
 
         if not pcm_audio:
             return None
 
         if len(pcm_audio) % 2 != 0:
-            raise ValueError(
-                "PCM16 audio must contain an even number of bytes."
-            )
+            raise ValueError("PCM16 audio must contain an even number of bytes.")
 
         if sample_rate <= 0:
-            raise ValueError(
-                "sample_rate must be greater than zero."
-            )
+            raise ValueError("sample_rate must be greater than zero.")
 
-        fd, path = tempfile.mkstemp(
-            suffix=".wav"
-        )
+        fd, path = tempfile.mkstemp(suffix=".wav")
 
         os.close(fd)
 
@@ -263,25 +243,17 @@ class WhisperTranscriber:
                     path,
                     "wb",
                 ) as wav:
-
                     wav.setnchannels(1)
                     wav.setsampwidth(2)
                     wav.setframerate(sample_rate)
 
-                    wav.writeframes(
-                        pcm_audio
-                    )
+                    wav.writeframes(pcm_audio)
 
-            await asyncio.to_thread(
-                write_wav
-            )
+            await asyncio.to_thread(write_wav)
 
-            return await self.transcribe_file_async(
-                path
-            )
+            return await self.transcribe_file_async(path)
 
         finally:
-
             try:
                 os.remove(path)
 
@@ -289,11 +261,7 @@ class WhisperTranscriber:
                 pass
 
             except OSError:
-
-                logger.exception(
-                    "Failed to delete temporary "
-                    "voice audio file."
-                )
+                logger.exception("Failed to delete temporary voice audio file.")
 
     # ========================================================
     # Blocking file transcription
@@ -305,14 +273,10 @@ class WhisperTranscriber:
     ) -> TranscriptionResult:
 
         if not audio_path:
-            raise ValueError(
-                "audio_path must not be empty."
-            )
+            raise ValueError("audio_path must not be empty.")
 
         if self.model is None:
-            raise RuntimeError(
-                "Whisper model is not initialized."
-            )
+            raise RuntimeError("Whisper model is not initialized.")
 
         logger.debug(
             "Starting Whisper transcription path=%s",
@@ -331,15 +295,13 @@ class WhisperTranscriber:
         texts: list[str] = []
 
         for segment in segments:
-
             text = segment.text.strip()
 
             if not text:
                 continue
 
             logger.debug(
-                "Whisper segment "
-                "[%.2fs -> %.2fs]: %s",
+                "Whisper segment [%.2fs -> %.2fs]: %s",
                 segment.start,
                 segment.end,
                 text,
@@ -347,15 +309,10 @@ class WhisperTranscriber:
 
             texts.append(text)
 
-        transcript = " ".join(
-            texts
-        ).strip()
+        transcript = " ".join(texts).strip()
 
         if len(transcript) > MAX_TRANSCRIPT_LENGTH:
-
-            transcript = transcript[
-                :MAX_TRANSCRIPT_LENGTH
-            ]
+            transcript = transcript[:MAX_TRANSCRIPT_LENGTH]
 
             logger.warning(
                 "Transcript truncated to %d characters",
@@ -399,19 +356,13 @@ class WhisperTranscriber:
     ) -> TranscriptionResult:
 
         if not audio_path:
-            raise ValueError(
-                "audio_path must not be empty."
-            )
+            raise ValueError("audio_path must not be empty.")
 
         if self._closed:
-            raise RuntimeError(
-                "Cannot transcribe with a closed transcriber."
-            )
+            raise RuntimeError("Cannot transcribe with a closed transcriber.")
 
         if not self._started:
-            raise RuntimeError(
-                "Transcriber has not been started."
-            )
+            raise RuntimeError("Transcriber has not been started.")
 
         return await asyncio.to_thread(
             self.transcribe_file,
@@ -422,6 +373,7 @@ class WhisperTranscriber:
 # ============================================================
 # Factory
 # ============================================================
+
 
 def whisper_transcriber() -> WhisperTranscriber:
     """

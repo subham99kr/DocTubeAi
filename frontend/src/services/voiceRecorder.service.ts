@@ -1,45 +1,32 @@
 export type VoiceRecorderCallbacks = {
   onStart?: () => void;
 
-  onChunk?: (
-    chunk: Blob
-  ) => void;
+  onChunk?: (chunk: Blob) => void;
 
-  onStop?: (
-    audioBlob: Blob
-  ) => void;
+  onStop?: (audioBlob: Blob) => void;
 
-  onError?: (
-    error: Error
-  ) => void;
+  onError?: (error: Error) => void;
 };
 
 export class VoiceRecorderService {
-  private mediaRecorder: MediaRecorder | null =
-    null;
+  private mediaRecorder: MediaRecorder | null = null;
 
   private audioChunks: Blob[] = [];
 
-  private stream: MediaStream | null =
-    null;
+  private stream: MediaStream | null = null;
 
   private stoppingManually = false;
 
-  async start(
-    callbacks: VoiceRecorderCallbacks = {}
-  ): Promise<void> {
+  async start(callbacks: VoiceRecorderCallbacks = {}): Promise<void> {
     try {
       this.stoppingManually = false;
 
       /*
        * Ask browser for microphone permission.
        */
-      this.stream =
-        await navigator.mediaDevices.getUserMedia(
-          {
-            audio: true,
-          }
-        );
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
 
       this.audioChunks = [];
 
@@ -47,84 +34,50 @@ export class VoiceRecorderService {
        * Let the browser choose a supported
        * audio format.
        */
-      const mimeType =
-        this.getSupportedMimeType();
+      const mimeType = this.getSupportedMimeType();
 
       this.mediaRecorder = mimeType
-        ? new MediaRecorder(
-            this.stream,
-            {
-              mimeType,
-            }
-          )
-        : new MediaRecorder(
-            this.stream
-          );
+        ? new MediaRecorder(this.stream, {
+            mimeType,
+          })
+        : new MediaRecorder(this.stream);
 
       this.mediaRecorder.onstart = () => {
-        console.log(
-          "🎙 MediaRecorder started"
-        );
+        console.log("🎙 MediaRecorder started");
 
         callbacks.onStart?.();
       };
 
-      this.mediaRecorder.ondataavailable =
-        (event: BlobEvent) => {
+      this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
+        if (event.data.size <= 0) {
+          return;
+        }
 
-            if (event.data.size <= 0) {
-            return;
-            }
+        this.audioChunks.push(event.data);
 
-            this.audioChunks.push(
-            event.data
-            );
-
-            /*
-            * Send every MediaRecorder chunk
-            * to the WebSocket.
-            */
-            callbacks.onChunk?.(
-            event.data
-            );
-        };
+        /*
+         * Send every MediaRecorder chunk
+         * to the WebSocket.
+         */
+        callbacks.onChunk?.(event.data);
+      };
 
       this.mediaRecorder.onerror = () => {
-        callbacks.onError?.(
-          new Error(
-            "MediaRecorder encountered an error."
-          )
-        );
+        callbacks.onError?.(new Error("MediaRecorder encountered an error."));
       };
 
       this.mediaRecorder.onstop = () => {
-        const type =
-          this.mediaRecorder?.mimeType ||
-          mimeType ||
-          "audio/webm";
+        const type = this.mediaRecorder?.mimeType || mimeType || "audio/webm";
 
-        const audioBlob =
-          new Blob(
-            this.audioChunks,
-            {
-              type,
-            }
-          );
+        const audioBlob = new Blob(this.audioChunks, {
+          type,
+        });
 
-        console.log(
-          "🎵 Recording complete"
-        );
+        console.log("🎵 Recording complete");
 
-        console.log(
-          "Type:",
-          audioBlob.type
-        );
+        console.log("Type:", audioBlob.type);
 
-        console.log(
-          "Size:",
-          audioBlob.size,
-          "bytes"
-        );
+        console.log("Size:", audioBlob.size, "bytes");
 
         /*
          * Only send the audio if this was
@@ -132,13 +85,8 @@ export class VoiceRecorderService {
          *
          * destroy() should not upload audio.
          */
-        if (
-          this.stoppingManually &&
-          audioBlob.size > 0
-        ) {
-          callbacks.onStop?.(
-            audioBlob
-          );
+        if (this.stoppingManually && audioBlob.size > 0) {
+          callbacks.onStop?.(audioBlob);
         }
 
         this.cleanup();
@@ -148,21 +96,15 @@ export class VoiceRecorderService {
        * Produce chunks every second.
        */
       this.mediaRecorder.start(1000);
-
     } catch (error) {
-      console.error(
-        "❌ Failed to start recording:",
-        error
-      );
+      console.error("❌ Failed to start recording:", error);
 
       this.cleanup();
 
       callbacks.onError?.(
         error instanceof Error
           ? error
-          : new Error(
-              "Could not access microphone."
-            )
+          : new Error("Could not access microphone."),
       );
 
       throw error;
@@ -170,17 +112,11 @@ export class VoiceRecorderService {
   }
 
   stop(): void {
-    if (
-      !this.mediaRecorder ||
-      this.mediaRecorder.state ===
-        "inactive"
-    ) {
+    if (!this.mediaRecorder || this.mediaRecorder.state === "inactive") {
       return;
     }
 
-    console.log(
-      "🛑 Stopping MediaRecorder..."
-    );
+    console.log("🛑 Stopping MediaRecorder...");
 
     this.stoppingManually = true;
 
@@ -188,15 +124,10 @@ export class VoiceRecorderService {
   }
 
   isRecording(): boolean {
-    return (
-      this.mediaRecorder?.state ===
-        "recording"
-    );
+    return this.mediaRecorder?.state === "recording";
   }
 
-  private getSupportedMimeType():
-    | string
-    | null {
+  private getSupportedMimeType(): string | null {
     const mimeTypes = [
       "audio/webm;codecs=opus",
       "audio/webm",
@@ -205,11 +136,7 @@ export class VoiceRecorderService {
     ];
 
     for (const mimeType of mimeTypes) {
-      if (
-        MediaRecorder.isTypeSupported(
-          mimeType
-        )
-      ) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
         return mimeType;
       }
     }
@@ -219,11 +146,9 @@ export class VoiceRecorderService {
 
   private cleanup(): void {
     if (this.stream) {
-      this.stream
-        .getTracks()
-        .forEach((track) => {
-          track.stop();
-        });
+      this.stream.getTracks().forEach((track) => {
+        track.stop();
+      });
     }
 
     this.stream = null;
@@ -233,11 +158,7 @@ export class VoiceRecorderService {
   }
 
   destroy(): void {
-    if (
-      this.mediaRecorder &&
-      this.mediaRecorder.state !==
-        "inactive"
-    ) {
+    if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
       /*
        * This is NOT a real recording completion.
        * Don't upload it.

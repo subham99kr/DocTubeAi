@@ -8,18 +8,11 @@ type Props = {
   children: ReactNode;
 };
 
-export default function ProtectedRoute({
-  children,
-}: Props) {
+export default function ProtectedRoute({ children }: Props) {
   const { token } = useAuth();
 
   if (!token) {
-    return (
-      <Navigate
-        to="/"
-        replace
-      />
-    );
+    return <Navigate to="/" replace />;
   }
 
   return children;

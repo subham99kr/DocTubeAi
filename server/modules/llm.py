@@ -1,11 +1,11 @@
 import os
 
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
 from langchain_core.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder,
 )
+from langchain_groq import ChatGroq
 
 load_dotenv()
 
@@ -17,33 +17,22 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 # =========================================================
 
 ROUTER_MODELS = [
-    m.strip()
-    for m in os.getenv("ROUTER_MODELS", "").split(",")
-    if m.strip()
+    m.strip() for m in os.getenv("ROUTER_MODELS", "").split(",") if m.strip()
 ]
 
 SIMPLE_CHAT_MODELS = [
-    m.strip()
-    for m in os.getenv("SIMPLE_CHAT_MODELS", "").split(",")
-    if m.strip()
+    m.strip() for m in os.getenv("SIMPLE_CHAT_MODELS", "").split(",") if m.strip()
 ]
 
-TOOL_MODELS = [
-    m.strip()
-    for m in os.getenv("TOOL_MODELS", "").split(",")
-    if m.strip()
-]
+TOOL_MODELS = [m.strip() for m in os.getenv("TOOL_MODELS", "").split(",") if m.strip()]
 
-RAG_MODELS = [
-    m.strip()
-    for m in os.getenv("RAG_MODELS", "").split(",")
-    if m.strip()
-]
+RAG_MODELS = [m.strip() for m in os.getenv("RAG_MODELS", "").split(",") if m.strip()]
 
 
 # =========================================================
 # BASE FACTORY
 # =========================================================
+
 
 def _build_llm(
     models,
@@ -65,9 +54,7 @@ def _build_llm(
     last_error = None
 
     for model in models:
-
         try:
-
             return ChatGroq(
                 groq_api_key=GROQ_API_KEY,
                 model=model,
@@ -75,18 +62,16 @@ def _build_llm(
             )
 
         except Exception as e:
-
             last_error = e
             continue
 
-    raise RuntimeError(
-        f"Failed to initialize model. Last error: {last_error}"
-    )
+    raise RuntimeError(f"Failed to initialize model. Last error: {last_error}")
 
 
 # =========================================================
 # ROUTER MODEL
 # =========================================================
+
 
 def get_router_model():
     """
@@ -110,6 +95,7 @@ def get_router_model():
 # =========================================================
 # SIMPLE CHAT MODEL
 # =========================================================
+
 
 def get_simple_chat_model():
     """
@@ -136,6 +122,7 @@ def get_simple_chat_model():
 # TOOL PLANNER MODEL
 # =========================================================
 
+
 def get_tool_model():
     """
     Tool orchestration model.
@@ -160,6 +147,7 @@ def get_tool_model():
 # RAG SYNTHESIS MODEL
 # =========================================================
 
+
 def get_rag_model():
     """
     Final RAG synthesis model.
@@ -178,9 +166,11 @@ def get_rag_model():
         temperature=0.3,
     )
 
+
 # =========================================================
 # CHATBOT PROMPT
 # =========================================================
+
 
 def get_chatbot_prompt():
 
@@ -236,12 +226,12 @@ Your goal is to give the most useful answer possible while sounding
 natural in both text and voice conversations.
 """
 
-    return ChatPromptTemplate.from_messages([
-        (
-            "system",
-            base_prompt,
-        ),
-        MessagesPlaceholder(
-            variable_name="messages"
-        ),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                base_prompt,
+            ),
+            MessagesPlaceholder(variable_name="messages"),
+        ]
+    )

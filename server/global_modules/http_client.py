@@ -1,7 +1,9 @@
-import httpx
 import logging
 
+import httpx
+
 logger = logging.getLogger(__name__)
+
 
 class HttpClientManager:
     _client: httpx.AsyncClient = None
@@ -11,8 +13,7 @@ class HttpClientManager:
         """Returns the singleton instance of the AsyncClient."""
         if cls._client is None or cls._client.is_closed:
             cls._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(30.0),
-                follow_redirects=True
+                timeout=httpx.Timeout(30.0), follow_redirects=True
             )
             logger.info("✅ Singleton HTTP Client Initialized")
         return cls._client

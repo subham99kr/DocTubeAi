@@ -2,6 +2,7 @@ import streamlit as st
 from modules.handle_pdf_upload import handle_pdf_upload
 from modules.url_submit import handle_url_click
 
+
 def render_context_bar():
     # 1. CSS - Move this OUTSIDE the expander
     st.markdown("""

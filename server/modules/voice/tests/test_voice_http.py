@@ -19,11 +19,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from api.voice_router import router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from api.voice_router import router
-
 
 # ============================================================
 # Fake transcriber

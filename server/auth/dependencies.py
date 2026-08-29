@@ -1,11 +1,12 @@
-from fastapi import Request,HTTPException
-from auth.security import get_oauth_id_from_token
 from typing import Optional
+
+from auth.security import get_oauth_id_from_token
+from fastapi import HTTPException, Request
 
 
 async def get_current_user_optional(request: Request) -> Optional[str]:
     auth_header = request.headers.get("Authorization")
-    
+
     if not auth_header:
         return None
 

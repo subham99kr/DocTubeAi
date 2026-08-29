@@ -8,9 +8,6 @@ def get_reranker():
     global _reranker
 
     if _reranker is None:
-
-        _reranker = CrossEncoder(
-            "cross-encoder/ms-marco-MiniLM-L-6-v2"
-        )
+        _reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
     return _reranker

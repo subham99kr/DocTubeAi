@@ -12,9 +12,7 @@ type Props = {
 
   activeSessionId: string;
 
-  onSelect: (
-    sessionId: string
-  ) => void;
+  onSelect: (sessionId: string) => void;
 };
 
 export default function SessionList({
@@ -22,26 +20,18 @@ export default function SessionList({
   activeSessionId,
   onSelect,
 }: Props) {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col gap-2">
       {sessions.map((session) => (
         <motion.button
           key={session.session_id}
-
           onClick={async () => {
+            navigate(`/chats/history/${session.session_id}`);
 
-            navigate(
-              `/chats/history/${session.session_id}`
-            );
-
-            await onSelect(
-              session.session_id
-            );
+            await onSelect(session.session_id);
           }}
-
           whileHover={{
             scale: 1.02,
           }}
@@ -53,18 +43,14 @@ export default function SessionList({
           }}
           layout
           className={`text-left p-3 rounded-xl border transition-all duration-200 ${
-            activeSessionId ===
-            session.session_id
+            activeSessionId === session.session_id
               ? "bg-blue-600 border-blue-500 shadow-lg"
               : "bg-[#1a1d24] border-[#30363d] hover:bg-[#22262f]"
           }`}
         >
           <p className="truncate text-sm">
             {session.title
-              ? session.title
-                  .charAt(0)
-                  .toUpperCase() +
-                session.title.slice(1)
+              ? session.title.charAt(0).toUpperCase() + session.title.slice(1)
               : "Untitled Chat"}
           </p>
         </motion.button>

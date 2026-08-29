@@ -1,6 +1,7 @@
 import streamlit as st
 from api.stream_client import stream_rag_response
 
+
 def handle_chat_logic(chat_container): # we take the container so that the input query can be loaded directly into that container
     if not st.session_state.get("processing") or "current_prompt" not in st.session_state:
         return

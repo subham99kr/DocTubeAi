@@ -4,9 +4,7 @@ import io
 
 import av
 import numpy as np
-
 from modules.voice.audio_decoder import AudioDecoder
-
 
 SAMPLE_RATE = 16000
 FRAME_DURATION_MS = 20

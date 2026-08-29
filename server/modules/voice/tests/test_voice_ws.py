@@ -23,11 +23,9 @@ from __future__ import annotations
 import json
 
 import pytest
+from api.voice_ws_router import router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from api.voice_ws_router import router
-
 
 # ============================================================
 # Fake VoiceSession

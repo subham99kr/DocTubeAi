@@ -17,7 +17,6 @@ from fastapi import (
     HTTPException,
     UploadFile,
 )
-
 from modules.voice.transcription import (
     whisper_transcriber,
 )
@@ -31,15 +30,12 @@ router = APIRouter(
 )
 
 
-@router.post(
-    "/transcribe"
-)
+@router.post("/transcribe")
 async def transcribe_audio(
     audio: UploadFile = File(...),
 ):
 
     if not audio:
-
         raise HTTPException(
             status_code=400,
             detail="Audio file is required.",
@@ -48,7 +44,6 @@ async def transcribe_audio(
     audio_bytes = await audio.read()
 
     if not audio_bytes:
-
         raise HTTPException(
             status_code=400,
             detail="Uploaded audio is empty.",
@@ -57,39 +52,24 @@ async def transcribe_audio(
     temp_path = None
 
     try:
-
         with NamedTemporaryFile(
             delete=False,
             suffix=".webm",
         ) as temp_file:
+            temp_file.write(audio_bytes)
 
-            temp_file.write(
-                audio_bytes
-            )
+            temp_path = temp_file.name
 
-            temp_path = (
-                temp_file.name
-            )
-
-        result = await (
-            whisper_transcriber.transcribe(
-                temp_path
-            )
-        )
+        result = await whisper_transcriber.transcribe(temp_path)
 
         return {
             "transcript": result.text,
             "language": result.language,
-            "language_probability": (
-                result.language_probability
-            ),
+            "language_probability": (result.language_probability),
         }
 
     except Exception as exc:
-
-        logger.exception(
-            "❌ HTTP transcription failed"
-        )
+        logger.exception("❌ HTTP transcription failed")
 
         raise HTTPException(
             status_code=500,
@@ -97,24 +77,12 @@ async def transcribe_audio(
         ) from exc
 
     finally:
-
-        if (
-            temp_path
-            and os.path.exists(
-                temp_path
-            )
-        ):
-
+        if temp_path and os.path.exists(temp_path):
             try:
-
-                os.remove(
-                    temp_path
-                )
+                os.remove(temp_path)
 
             except Exception:
-
                 logger.warning(
-                    "⚠️ Could not delete "
-                    "temporary audio file: %s",
+                    "⚠️ Could not delete temporary audio file: %s",
                     temp_path,
                 )

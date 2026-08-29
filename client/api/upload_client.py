@@ -2,6 +2,7 @@ import requests
 import streamlit as st
 from utils.config import BACKEND_URL
 
+
 def upload_pdfs_api(files, session_id, token=None):
     if not session_id:
         st.error("Session ID missing")

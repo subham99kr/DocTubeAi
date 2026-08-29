@@ -1,9 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 import type { ReactNode } from "react";
 
@@ -19,74 +14,48 @@ type AuthContextType = {
 
   loading: boolean;
 
-  login: (
-    token: string,
-    user: User
-  ) => void;
+  login: (token: string, user: User) => void;
 
   logout: () => void;
 };
 
-const AuthContext =
-  createContext<AuthContextType | null>(
-    null
-  );
+const AuthContext = createContext<AuthContextType | null>(null);
 
 type Props = {
   children: ReactNode;
 };
 
-export function AuthProvider({
-  children,
-}: Props) {
-  const [token, setToken] =
-    useState<string | null>(null);
+export function AuthProvider({ children }: Props) {
+  const [token, setToken] = useState<string | null>(null);
 
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken =
-      localStorage.getItem(
-        "access_token"
-      );
+    const storedToken = localStorage.getItem("access_token");
 
-    const storedUser =
-      localStorage.getItem("user");
+    const storedUser = localStorage.getItem("user");
 
     if (storedToken) {
       setToken(storedToken);
     }
 
     if (storedUser) {
-      setUser(
-        JSON.parse(storedUser)
-      );
+      setUser(JSON.parse(storedUser));
     }
 
     setLoading(false);
   }, []);
 
-  const login = (
-    newToken: string,
-    newUser: User
-  ) => {
+  const login = (newToken: string, newUser: User) => {
     setToken(newToken);
 
     setUser(newUser);
 
-    localStorage.setItem(
-      "access_token",
-      newToken
-    );
+    localStorage.setItem("access_token", newToken);
 
-    localStorage.setItem(
-      "user",
-      JSON.stringify(newUser)
-    );
+    localStorage.setItem("user", JSON.stringify(newUser));
   };
 
   const logout = () => {
@@ -94,18 +63,12 @@ export function AuthProvider({
 
     setUser(null);
 
-    localStorage.removeItem(
-      "access_token"
-    );
+    localStorage.removeItem("access_token");
 
-    localStorage.removeItem(
-      "user"
-    );
+    localStorage.removeItem("user");
 
     // IMPORTANT
-    sessionStorage.removeItem(
-      "auth_processed"
-    );
+    sessionStorage.removeItem("auth_processed");
   };
 
   return (
@@ -124,13 +87,10 @@ export function AuthProvider({
 }
 
 export function useAuth() {
-  const context =
-    useContext(AuthContext);
+  const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error(
-      "useAuth must be used inside AuthProvider"
-    );
+    throw new Error("useAuth must be used inside AuthProvider");
   }
 
   return context;

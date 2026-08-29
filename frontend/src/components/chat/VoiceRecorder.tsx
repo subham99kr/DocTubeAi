@@ -1,8 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   onTranscript: (text: string) => void;
@@ -41,17 +37,12 @@ type SpeechRecognitionLike = {
   onstart: (() => void) | null;
   onend: (() => void) | null;
 
-  onerror:
-    | ((event: SpeechRecognitionErrorEventLike) => void)
-    | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
 
-  onresult:
-    | ((event: SpeechRecognitionEventLike) => void)
-    | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
 };
 
-type SpeechRecognitionConstructor =
-  new () => SpeechRecognitionLike;
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
 declare global {
   interface Window {
@@ -66,8 +57,7 @@ export default function VoiceRecorder({
   onRecordingStop,
   disabled = false,
 }: Props) {
-  const recognitionRef =
-    useRef<SpeechRecognitionLike | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   /*
    * Whether the user is intentionally recording.
@@ -76,44 +66,33 @@ export default function VoiceRecorder({
    * SpeechRecognition running state because Chrome
    * can stop/restart recognition internally.
    */
-  const shouldContinueRef =
-    useRef(false);
+  const shouldContinueRef = useRef(false);
 
   /*
    * Complete words/sentences that SpeechRecognition
    * has marked as final.
    */
-  const finalTranscriptRef =
-    useRef("");
+  const finalTranscriptRef = useRef("");
 
   /*
    * Current temporary/interim words.
    */
-  const interimTranscriptRef =
-    useRef("");
+  const interimTranscriptRef = useRef("");
 
   /*
    * Used to detect when no NEW words have arrived.
    */
-  const lastTranscriptRef =
-    useRef("");
+  const lastTranscriptRef = useRef("");
 
-  const silenceTimerRef =
-    useRef<ReturnType<typeof setTimeout> | null>(
-      null
-    );
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const restartingRef =
-    useRef(false);
+  const restartingRef = useRef(false);
 
-  const [isRecording, setIsRecording] =
-    useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
-  const [liveTranscript, setLiveTranscript] =
-    useState("");
+  const [liveTranscript, setLiveTranscript] = useState("");
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   /*
    * If the recognized transcript does not change
@@ -127,34 +106,22 @@ export default function VoiceRecorder({
 
   function clearPauseTimer() {
     if (silenceTimerRef.current) {
-      clearTimeout(
-        silenceTimerRef.current
-      );
+      clearTimeout(silenceTimerRef.current);
 
       silenceTimerRef.current = null;
     }
   }
 
   function getCurrentTranscript() {
-    const finalText =
-      finalTranscriptRef.current.trim();
+    const finalText = finalTranscriptRef.current.trim();
 
-    const interimText =
-      interimTranscriptRef.current.trim();
+    const interimText = interimTranscriptRef.current.trim();
 
-    return [
-      finalText,
-      interimText,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
+    return [finalText, interimText].filter(Boolean).join(" ").trim();
   }
 
   function finishRecording() {
-    console.log(
-      "🛑 Finishing voice recording..."
-    );
+    console.log("🛑 Finishing voice recording...");
 
     clearPauseTimer();
 
@@ -162,8 +129,7 @@ export default function VoiceRecorder({
 
     restartingRef.current = false;
 
-    const recognition =
-      recognitionRef.current;
+    const recognition = recognitionRef.current;
 
     if (recognition) {
       try {
@@ -178,14 +144,10 @@ export default function VoiceRecorder({
      *
      * Interim speech can disappear/change.
      */
-    const finalText =
-      finalTranscriptRef.current.trim();
+    const finalText = finalTranscriptRef.current.trim();
 
     if (finalText) {
-      console.log(
-        "✅ Final transcript:",
-        finalText
-      );
+      console.log("✅ Final transcript:", finalText);
 
       /*
        * THIS is where onTranscript is used.
@@ -212,13 +174,10 @@ export default function VoiceRecorder({
     }
 
     const SpeechRecognition =
-      window.SpeechRecognition ||
-      window.webkitSpeechRecognition;
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setError(
-        "Speech recognition is not supported in this browser."
-      );
+      setError("Speech recognition is not supported in this browser.");
 
       return;
     }
@@ -241,17 +200,14 @@ export default function VoiceRecorder({
 
     shouldContinueRef.current = true;
 
-    const recognition =
-      new SpeechRecognition();
+    const recognition = new SpeechRecognition();
 
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-IN";
 
     recognition.onstart = () => {
-      console.log(
-        "🎙 Speech recognition started"
-      );
+      console.log("🎙 Speech recognition started");
 
       restartingRef.current = false;
 
@@ -260,88 +216,60 @@ export default function VoiceRecorder({
       onRecordingStart?.();
     };
 
-    recognition.onresult = (
-      event: SpeechRecognitionEventLike
-    ) => {
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
       let finalText = "";
       let interimText = "";
 
       /*
        * Read the complete result set.
        */
-      for (
-        let i = 0;
-        i < event.results.length;
-        i++
-      ) {
-        const result =
-          event.results[i];
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
 
-        const text =
-          result[0].transcript;
+        const text = result[0].transcript;
 
         if (result.isFinal) {
-          finalText +=
-            text + " ";
+          finalText += text + " ";
         } else {
-          interimText +=
-            text + " ";
+          interimText += text + " ";
         }
       }
 
-      finalText =
-        finalText.trim();
+      finalText = finalText.trim();
 
-      interimText =
-        interimText.trim();
+      interimText = interimText.trim();
 
       /*
        * If the browser gives us final words,
        * append them to our permanent transcript.
        */
       if (finalText) {
-        const previousFinal =
-          finalTranscriptRef.current;
+        const previousFinal = finalTranscriptRef.current;
 
         /*
          * Avoid blindly duplicating the same
          * final transcript when Chrome sends
          * overlapping results.
          */
-        if (
-          !previousFinal.endsWith(
-            finalText
-          )
-        ) {
-          finalTranscriptRef.current =
-            [
-              previousFinal,
-              finalText,
-            ]
-              .filter(Boolean)
-              .join(" ")
-              .trim();
+        if (!previousFinal.endsWith(finalText)) {
+          finalTranscriptRef.current = [previousFinal, finalText]
+            .filter(Boolean)
+            .join(" ")
+            .trim();
         }
       }
 
-      interimTranscriptRef.current =
-        interimText;
+      interimTranscriptRef.current = interimText;
 
-      const currentTranscript =
-        getCurrentTranscript();
+      const currentTranscript = getCurrentTranscript();
 
       /*
        * Show live text immediately.
        */
       if (currentTranscript) {
-        console.log(
-          "📝 Live transcript:",
-          currentTranscript
-        );
+        console.log("📝 Live transcript:", currentTranscript);
 
-        setLiveTranscript(
-          currentTranscript
-        );
+        setLiveTranscript(currentTranscript);
       }
 
       /*
@@ -349,13 +277,10 @@ export default function VoiceRecorder({
        *
        * We don't look at microphone volume.
        */
-      const transcriptChanged =
-        currentTranscript !==
-        lastTranscriptRef.current;
+      const transcriptChanged = currentTranscript !== lastTranscriptRef.current;
 
       if (transcriptChanged) {
-        lastTranscriptRef.current =
-          currentTranscript;
+        lastTranscriptRef.current = currentTranscript;
 
         /*
          * New words arrived.
@@ -364,28 +289,18 @@ export default function VoiceRecorder({
          */
         clearPauseTimer();
 
-        silenceTimerRef.current =
-          setTimeout(() => {
-            console.log(
-              "⏱ No new words detected."
-            );
+        silenceTimerRef.current = setTimeout(() => {
+          console.log("⏱ No new words detected.");
 
-            console.log(
-              "🛑 Completing utterance..."
-            );
+          console.log("🛑 Completing utterance...");
 
-            finishRecording();
-          }, WORD_PAUSE_TIMEOUT);
+          finishRecording();
+        }, WORD_PAUSE_TIMEOUT);
       }
     };
 
-    recognition.onerror = (
-      event: SpeechRecognitionErrorEventLike
-    ) => {
-      console.error(
-        "❌ Speech recognition error:",
-        event.error
-      );
+    recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
+      console.error("❌ Speech recognition error:", event.error);
 
       /*
        * Chrome can produce no-speech when
@@ -393,15 +308,11 @@ export default function VoiceRecorder({
        *
        * Don't destroy the entire UI for it.
        */
-      if (
-        event.error === "no-speech"
-      ) {
+      if (event.error === "no-speech") {
         return;
       }
 
-      if (
-        event.error === "aborted"
-      ) {
+      if (event.error === "aborted") {
         return;
       }
 
@@ -411,17 +322,13 @@ export default function VoiceRecorder({
 
       setIsRecording(false);
 
-      setError(
-        `Speech recognition error: ${event.error}`
-      );
+      setError(`Speech recognition error: ${event.error}`);
 
       onRecordingStop?.();
     };
 
     recognition.onend = () => {
-      console.log(
-        "🎙 Speech recognition ended"
-      );
+      console.log("🎙 Speech recognition ended");
 
       /*
        * Chrome sometimes ends recognition
@@ -430,25 +337,18 @@ export default function VoiceRecorder({
        * If the user hasn't finished speaking,
        * restart it.
        */
-      if (
-        shouldContinueRef.current
-      ) {
+      if (shouldContinueRef.current) {
         if (restartingRef.current) {
           return;
         }
 
         restartingRef.current = true;
 
-        console.log(
-          "🔄 Restarting speech recognition..."
-        );
+        console.log("🔄 Restarting speech recognition...");
 
         setTimeout(() => {
-          if (
-            !shouldContinueRef.current
-          ) {
-            restartingRef.current =
-              false;
+          if (!shouldContinueRef.current) {
+            restartingRef.current = false;
 
             return;
           }
@@ -456,10 +356,7 @@ export default function VoiceRecorder({
           try {
             recognition.start();
           } catch (error) {
-            console.warn(
-              "Could not restart recognition:",
-              error
-            );
+            console.warn("Could not restart recognition:", error);
           }
         }, 100);
 
@@ -469,25 +366,18 @@ export default function VoiceRecorder({
       setIsRecording(false);
     };
 
-    recognitionRef.current =
-      recognition;
+    recognitionRef.current = recognition;
 
     try {
       recognition.start();
     } catch (error) {
-      console.error(
-        "❌ Could not start speech recognition:",
-        error
-      );
+      console.error("❌ Could not start speech recognition:", error);
 
-      shouldContinueRef.current =
-        false;
+      shouldContinueRef.current = false;
 
       setIsRecording(false);
 
-      setError(
-        "Could not start speech recognition."
-      );
+      setError("Could not start speech recognition.");
     }
   }
 
@@ -507,16 +397,13 @@ export default function VoiceRecorder({
     return () => {
       clearPauseTimer();
 
-      shouldContinueRef.current =
-        false;
+      shouldContinueRef.current = false;
 
-      restartingRef.current =
-        false;
+      restartingRef.current = false;
 
       recognitionRef.current?.abort();
 
-      recognitionRef.current =
-        null;
+      recognitionRef.current = null;
     };
   }, []);
 
@@ -527,11 +414,7 @@ export default function VoiceRecorder({
         type="button"
         onClick={handleClick}
         disabled={disabled}
-        title={
-          isRecording
-            ? "Stop dictation"
-            : "Start dictation"
-        }
+        title={isRecording ? "Stop dictation" : "Start dictation"}
         className={`
           w-10
           h-10
@@ -548,16 +431,10 @@ export default function VoiceRecorder({
               : "hover:bg-[#2a2f3a]"
           }
 
-          ${
-            disabled
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }
+          ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         `}
       >
-        {isRecording
-          ? "■"
-          : "🎙"}
+        {isRecording ? "■" : "🎙"}
       </button>
 
       {/* Live transcript */}
@@ -597,10 +474,7 @@ export default function VoiceRecorder({
             Listening...
           </div>
 
-          <div>
-            {liveTranscript ||
-              "Speak now..."}
-          </div>
+          <div>{liveTranscript || "Speak now..."}</div>
 
           <div
             className="

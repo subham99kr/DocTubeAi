@@ -1,7 +1,6 @@
 import logging
 
 from state.state import State
-
 from tools.tavily_search import (
     run_tavily_search,
 )
@@ -26,32 +25,26 @@ async def internet_search_node(
     )
 
     try:
-
-        logger.info(f"🌐 Internet search: "f"{query}")
+        logger.info(f"🌐 Internet search: {query}")
 
         context = await run_tavily_search(
             client,
             query,
         )
 
-        state["used_tools"].append(
-            "internet_search"
-        )
+        state["used_tools"].append("internet_search")
 
         if not context:
-
-            state["tool_outputs"].append({
-                "tool": "internet_search",
-                "success": False,
-                "summary": (
-                    "No internet search "
-                    "results found."
-                ),
-            })
+            state["tool_outputs"].append(
+                {
+                    "tool": "internet_search",
+                    "success": False,
+                    "summary": ("No internet search results found."),
+                }
+            )
 
             state["agent_scratchpad"].append(
-                "Internet search returned "
-                "no useful results."
+                "Internet search returned no useful results."
             )
 
             return state
@@ -62,44 +55,36 @@ async def internet_search_node(
             "content": context,
         }
 
-        state["retrieved_chunks"].append(
-            chunk
-        )
+        state["retrieved_chunks"].append(chunk)
 
-        state["tool_outputs"].append({
-            "tool": "internet_search",
-            "success": True,
-            "summary": (
-                "Retrieved internet "
-                "search results."
-            ),
-        })
+        state["tool_outputs"].append(
+            {
+                "tool": "internet_search",
+                "success": True,
+                "summary": ("Retrieved internet search results."),
+            }
+        )
 
         state["agent_scratchpad"].append(
-            "Internet search retrieved "
-            "external web information."
+            "Internet search retrieved external web information."
         )
 
-        state["sources_used"].append(
-            "internet"
-        )
+        state["sources_used"].append("internet")
 
         return state
 
     except Exception as e:
-
         logger.error(
-            f"❌ Internet search failed: "
-            f"{str(e)}",
+            f"❌ Internet search failed: {str(e)}",
             exc_info=True,
         )
 
-        state["tool_outputs"].append({
-            "tool": "internet_search",
-            "success": False,
-            "summary": (
-                "Internet search failed."
-            ),
-        })
+        state["tool_outputs"].append(
+            {
+                "tool": "internet_search",
+                "success": False,
+                "summary": ("Internet search failed."),
+            }
+        )
 
         return state

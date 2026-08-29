@@ -13,7 +13,6 @@ import sys
 
 from modules.voice.assistant import VoiceAssistant
 
-
 # ============================================================
 # Fake runner
 # ============================================================

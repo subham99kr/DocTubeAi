@@ -1,13 +1,11 @@
+import json
 import logging
 import re
-import json
 from typing import Literal
 
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
-
 from state.state import State
-
 
 logger = logging.getLogger(__name__)
 
@@ -44,21 +42,14 @@ async def tool_call_node(
     """
 
     try:
-
         # =================================================
         # LOOP PROTECTION
         # =================================================
 
-        state["tool_steps"] = (
-            state.get("tool_steps", 0) + 1
-        )
+        state["tool_steps"] = state.get("tool_steps", 0) + 1
 
         if state["tool_steps"] > 4:
-
-            logger.warning(
-                "Tool loop limit exceeded. "
-                "Sending directly to rag_chatbot."
-            )
+            logger.warning("Tool loop limit exceeded. Sending directly to rag_chatbot.")
 
             state["route"] = "rag"
 
@@ -69,9 +60,7 @@ async def tool_call_node(
         # =================================================
 
         last_human = next(
-            m
-            for m in reversed(state["messages"])
-            if isinstance(m, HumanMessage)
+            m for m in reversed(state["messages"]) if isinstance(m, HumanMessage)
         )
 
         query = last_human.content
@@ -191,10 +180,7 @@ or
             AttributeError,
             TypeError,
         ):
-
-            logger.warning(
-                f"Invalid planner response: {content}"
-            )
+            logger.warning(f"Invalid planner response: {content}")
 
             # IMPORTANT:
             # Planner failure should NOT send us to
@@ -215,11 +201,7 @@ or
         }
 
         if detected_route not in valid_routes:
-
-            logger.warning(
-                f"Unknown planner route: {detected_route}. "
-                f"Using rag."
-            )
+            logger.warning(f"Unknown planner route: {detected_route}. Using rag.")
 
             detected_route = "rag"
 
@@ -228,24 +210,17 @@ or
         # =================================================
 
         if detected_route == "web_scraper":
-
             url_match = re.search(
                 r"https?://\S+",
                 query,
             )
 
             if url_match:
-
-                state["next_tool_hint"] = (
-                    url_match.group(0)
-                )
+                state["next_tool_hint"] = url_match.group(0)
 
             else:
-
                 logger.warning(
-                    "web_scraper selected "
-                    "but no URL found. "
-                    "Falling back to rag."
+                    "web_scraper selected but no URL found. Falling back to rag."
                 )
 
                 detected_route = "rag"
@@ -255,11 +230,7 @@ or
         # =================================================
 
         if detected_route in used_tools:
-
-            logger.warning(
-                f"Repeated tool attempt: "
-                f"{detected_route}"
-            )
+            logger.warning(f"Repeated tool attempt: {detected_route}")
 
             remaining = [
                 route
@@ -272,11 +243,9 @@ or
             ]
 
             if remaining:
-
                 detected_route = remaining[0]
 
             else:
-
                 # IMPORTANT:
                 # No retrieval tool left.
                 # Do NOT go to simple_chat.
@@ -292,15 +261,11 @@ or
 
         state["route"] = detected_route
 
-        logger.info(
-            f"Planner selected route: "
-            f"{detected_route}"
-        )
+        logger.info(f"Planner selected route: {detected_route}")
 
         return state
 
     except Exception as e:
-
         logger.error(
             f"Tool planner error: {str(e)}",
             exc_info=True,

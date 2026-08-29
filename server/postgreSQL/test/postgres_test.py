@@ -1,5 +1,6 @@
 # postgres_helper.py
 import uuid
+
 import asyncpg
 
 INSERT_USER_SQL = """

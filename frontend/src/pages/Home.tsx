@@ -1,12 +1,6 @@
-import {
-  useEffect,
-} from "react";
+import { useEffect } from "react";
 
-import {
-  useSearchParams,
-  useParams,
-  useNavigate,
-} from "react-router-dom";
+import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 
 import MainLayout from "../layouts/MainLayout";
 
@@ -22,42 +16,24 @@ import { exchangeCodeForToken } from "../api/authApi";
 
 import { useAuth } from "../context/AuthContext";
 
-import {
-  useChat as useChatContext,
-} from "../context/ChatContext";
+import { useChat as useChatContext } from "../context/ChatContext";
 
 import { useSessions } from "../hooks/useSessions";
 
 export default function Home() {
+  const { sendMessage, loading } = useChat();
 
-  const {
-    sendMessage,
-    loading,
-  } = useChat();
+  const { login } = useAuth();
 
-  const { login } =
-    useAuth();
+  const { status, sessionId: currentSessionId } = useChatContext();
 
-  const {
-    status,
-    sessionId: currentSessionId,
-  } = useChatContext();
+  const { switchSession } = useSessions();
 
-  const {
-    switchSession,
-  } = useSessions();
+  const [searchParams] = useSearchParams();
 
-  const [
-    searchParams,
-  ] = useSearchParams();
+  const { sessionId } = useParams();
 
-  const {
-    sessionId,
-  } = useParams();
-
-  const navigate =
-    useNavigate();
-
+  const navigate = useNavigate();
 
   // =====================================================
   // INITIAL URL
@@ -69,111 +45,56 @@ export default function Home() {
   // =====================================================
 
   useEffect(() => {
-
-    if (
-      !sessionId &&
-      currentSessionId
-    ) {
-      navigate(
-        `/chats/history/${currentSessionId}`,
-        {
-          replace: true,
-        }
-      );
+    if (!sessionId && currentSessionId) {
+      navigate(`/chats/history/${currentSessionId}`, {
+        replace: true,
+      });
     }
-
-  }, [
-    sessionId,
-    currentSessionId,
-    navigate,
-  ]);
-
+  }, [sessionId, currentSessionId, navigate]);
 
   // =====================================================
   // LOAD CHAT FROM URL
   // =====================================================
 
   useEffect(() => {
-
     if (sessionId) {
-
-      switchSession(
-        sessionId
-      );
-
+      switchSession(sessionId);
     }
-
   }, [sessionId]);
-
 
   // =====================================================
   // HANDLE OAUTH REDIRECT
   // =====================================================
 
   useEffect(() => {
-
     async function authenticate() {
+      const code = searchParams.get("code");
 
-      const code =
-        searchParams.get(
-          "code"
-        );
+      const authProcessed = sessionStorage.getItem("auth_processed");
 
-      const authProcessed =
-        sessionStorage.getItem(
-          "auth_processed"
-        );
-
-      if (
-        !code ||
-        authProcessed
-      ) {
+      if (!code || authProcessed) {
         return;
       }
 
-      sessionStorage.setItem(
-        "auth_processed",
-        "true"
-      );
+      sessionStorage.setItem("auth_processed", "true");
 
       try {
+        const data = await exchangeCodeForToken(code);
 
-        const data =
-          await exchangeCodeForToken(
-            code
-          );
+        login(data.access_token, data.user);
 
-        login(
-          data.access_token,
-          data.user
-        );
+        const cleanUrl = window.location.pathname;
 
-        const cleanUrl =
-          window.location.pathname;
-
-        window.history.replaceState(
-          {},
-          document.title,
-          cleanUrl
-        );
-
+        window.history.replaceState({}, document.title, cleanUrl);
       } catch (error) {
+        console.error("OAuth Failed:", error);
 
-        console.error(
-          "OAuth Failed:",
-          error
-        );
-
-        sessionStorage.removeItem(
-          "auth_processed"
-        );
+        sessionStorage.removeItem("auth_processed");
       }
     }
 
     authenticate();
-
   }, []);
-
 
   // =====================================================
   // UI
@@ -181,62 +102,39 @@ export default function Home() {
 
   return (
     <MainLayout>
-
       <div className="h-full flex flex-col bg-[#0e1117] text-white min-h-0 relative overflow-hidden">
-
         <AnimatedBackground />
-
 
         {/* Header */}
 
         <div className="border-b border-[#30363d]/60 backdrop-blur-md bg-black/10 p-4 shrink-0 relative z-10">
-
-          <h1 className="text-xl sm:text-2xl font-bold truncate">
-            DocTubeAI
-          </h1>
+          <h1 className="text-xl sm:text-2xl font-bold truncate">DocTubeAI</h1>
 
           <p className="text-xs sm:text-sm text-gray-400 mt-1">
             Multi-source AI RAG Assistant
           </p>
-
         </div>
-
 
         {/* Chat Window */}
 
         <div className="flex-1 overflow-hidden min-h-0 relative z-10">
-
           <ChatWindow />
-
         </div>
-
 
         {/* Status */}
 
         {status && (
-
           <div className="px-4 py-2 text-xs text-cyan-300 relative z-10 backdrop-blur-sm bg-black/10 border-t border-white/5">
-
             ✨ {status}
-
           </div>
-
         )}
-
 
         {/* Chat Input */}
 
         <div className="shrink-0 relative z-10">
-
-          <ChatInput
-            onSend={sendMessage}
-            disabled={loading}
-          />
-
+          <ChatInput onSend={sendMessage} disabled={loading} />
         </div>
-
       </div>
-
     </MainLayout>
   );
 }

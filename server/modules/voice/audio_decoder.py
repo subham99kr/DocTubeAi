@@ -33,7 +33,6 @@ from typing import Optional
 import av
 import numpy as np
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -80,23 +79,14 @@ class AudioDecoder:
     ) -> None:
 
         if sample_rate <= 0:
-            raise ValueError(
-                "sample_rate must be greater than zero."
-            )
+            raise ValueError("sample_rate must be greater than zero.")
 
         if frame_duration_ms <= 0:
-            raise ValueError(
-                "frame_duration_ms must be greater than zero."
-            )
+            raise ValueError("frame_duration_ms must be greater than zero.")
 
-        samples_per_frame = (
-            sample_rate
-            * frame_duration_ms
-            / 1000
-        )
+        samples_per_frame = sample_rate * frame_duration_ms / 1000
 
         if not samples_per_frame.is_integer():
-
             raise ValueError(
                 "sample_rate and frame_duration_ms "
                 "must produce an integer number of samples."
@@ -104,17 +94,11 @@ class AudioDecoder:
 
         self.sample_rate = sample_rate
 
-        self.frame_duration_ms = (
-            frame_duration_ms
-        )
+        self.frame_duration_ms = frame_duration_ms
 
-        self.samples_per_frame = int(
-            samples_per_frame
-        )
+        self.samples_per_frame = int(samples_per_frame)
 
-        self.frame_size_bytes = (
-            self.samples_per_frame * 2
-        )
+        self.frame_size_bytes = self.samples_per_frame * 2
 
         # ----------------------------------------------------
         # Continuous WebM/Opus stream.
@@ -155,9 +139,7 @@ class AudioDecoder:
         Number of PCM bytes waiting for a complete frame.
         """
 
-        return len(
-            self._pcm_buffer
-        )
+        return len(self._pcm_buffer)
 
     @property
     def buffered_samples(self) -> int:
@@ -165,9 +147,7 @@ class AudioDecoder:
         Number of PCM samples waiting for a complete frame.
         """
 
-        return len(
-            self._pcm_buffer
-        ) // 2
+        return len(self._pcm_buffer) // 2
 
     @property
     def webm_buffered_bytes(self) -> int:
@@ -175,9 +155,7 @@ class AudioDecoder:
         Number of WebM bytes currently retained.
         """
 
-        return len(
-            self._webm_buffer
-        )
+        return len(self._webm_buffer)
 
     @property
     def closed(self) -> bool:
@@ -199,35 +177,26 @@ class AudioDecoder:
         """
 
         if not audio_chunk:
-
             return []
 
         async with self._lock:
-
             if self._closed:
-
-                raise RuntimeError(
-                    "AudioDecoder is closed."
-                )
+                raise RuntimeError("AudioDecoder is closed.")
 
             # ------------------------------------------------
             # Append the new MediaRecorder chunk to the
             # continuous WebM stream.
             # ------------------------------------------------
 
-            self._webm_buffer.extend(
-                audio_chunk
-            )
+            self._webm_buffer.extend(audio_chunk)
 
             try:
-
                 pcm = await asyncio.to_thread(
                     self._decode_stream,
                     bytes(self._webm_buffer),
                 )
 
             except av.error.InvalidDataError:
-
                 # ------------------------------------------------
                 # The accumulated stream may still be incomplete.
                 #
@@ -235,26 +204,16 @@ class AudioDecoder:
                 # chunks. Do NOT kill the voice session.
                 # ------------------------------------------------
 
-                logger.debug(
-                    "Incomplete WebM stream; "
-                    "waiting for more audio data."
-                )
+                logger.debug("Incomplete WebM stream; waiting for more audio data.")
 
                 return []
 
             except Exception:
-
-                logger.exception(
-                    "Audio decoding failed."
-                )
+                logger.exception("Audio decoding failed.")
 
                 raise
 
-            if (
-                pcm is None
-                or pcm.size == 0
-            ):
-
+            if pcm is None or pcm.size == 0:
                 return []
 
             # ------------------------------------------------
@@ -267,24 +226,14 @@ class AudioDecoder:
 
             total_samples = len(pcm)
 
-            if (
-                total_samples
-                <= self._decoded_samples
-            ):
-
+            if total_samples <= self._decoded_samples:
                 return []
 
-            new_pcm = pcm[
-                self._decoded_samples:
-            ]
+            new_pcm = pcm[self._decoded_samples :]
 
-            self._decoded_samples = (
-                total_samples
-            )
+            self._decoded_samples = total_samples
 
-            self._pcm_buffer.extend(
-                new_pcm.tobytes()
-            )
+            self._pcm_buffer.extend(new_pcm.tobytes())
 
             return self._extract_frames()
 
@@ -306,79 +255,51 @@ class AudioDecoder:
         """
 
         if not audio_bytes:
-
             return np.empty(
                 0,
                 dtype=np.int16,
             )
 
-        container: Optional[
-            av.container.InputContainer
-        ] = None
+        container: Optional[av.container.InputContainer] = None
 
         try:
-
             container = av.open(
                 io.BytesIO(audio_bytes),
                 mode="r",
             )
 
-            audio_stream = (
-                self._find_audio_stream(
-                    container
-                )
-            )
+            audio_stream = self._find_audio_stream(container)
 
             if audio_stream is None:
-
                 return np.empty(
                     0,
                     dtype=np.int16,
                 )
 
-            resampler = (
-                av.audio.resampler.AudioResampler(
-                    format="s16",
-                    layout="mono",
-                    rate=self.sample_rate,
-                )
+            resampler = av.audio.resampler.AudioResampler(
+                format="s16",
+                layout="mono",
+                rate=self.sample_rate,
             )
 
-            samples: list[
-                np.ndarray
-            ] = []
+            samples: list[np.ndarray] = []
 
-            for frame in container.decode(
-                audio_stream
-            ):
-
-                converted_frames = (
-                    resampler.resample(frame)
-                )
+            for frame in container.decode(audio_stream):
+                converted_frames = resampler.resample(frame)
 
                 if converted_frames is None:
-
                     continue
 
                 if not isinstance(
                     converted_frames,
                     list,
                 ):
+                    converted_frames = [converted_frames]
 
-                    converted_frames = [
-                        converted_frames
-                    ]
-
-                for output_frame in (
-                    converted_frames
-                ):
-
-                    array = (
-                        output_frame.to_ndarray()
-                    )
+                for output_frame in converted_frames:
+                    array = output_frame.to_ndarray()
 
                     if array.size == 0:
-
                         continue
 
                     array = np.asarray(
@@ -389,35 +310,24 @@ class AudioDecoder:
                     # AudioResampler is configured
                     # for mono.
 
-                    array = array.reshape(
-                        -1
-                    )
+                    array = array.reshape(-1)
 
-                    samples.append(
-                        array
-                    )
+                    samples.append(array)
 
             if not samples:
-
                 return np.empty(
                     0,
                     dtype=np.int16,
                 )
 
-            return np.concatenate(
-                samples
-            )
+            return np.concatenate(samples)
 
         finally:
-
             if container is not None:
-
                 try:
-
                     container.close()
 
                 except Exception:
-
                     logger.debug(
                         "Failed to close audio container.",
                         exc_info=True,
@@ -436,9 +346,7 @@ class AudioDecoder:
         """
 
         for stream in container.streams:
-
             if stream.type == "audio":
-
                 return stream
 
         return None
@@ -466,24 +374,12 @@ class AudioDecoder:
 
         frames: list[bytes] = []
 
-        while (
-            len(self._pcm_buffer)
-            >= self.frame_size_bytes
-        ):
+        while len(self._pcm_buffer) >= self.frame_size_bytes:
+            frame = bytes(self._pcm_buffer[: self.frame_size_bytes])
 
-            frame = bytes(
-                self._pcm_buffer[
-                    :self.frame_size_bytes
-                ]
-            )
+            del self._pcm_buffer[: self.frame_size_bytes]
 
-            del self._pcm_buffer[
-                :self.frame_size_bytes
-            ]
-
-            frames.append(
-                frame
-            )
+            frames.append(frame)
 
         return frames
 
@@ -502,18 +398,13 @@ class AudioDecoder:
         """
 
         async with self._lock:
-
             if self._closed:
-
                 return []
 
             if not self._pcm_buffer:
-
                 return []
 
-            frame = bytes(
-                self._pcm_buffer
-            )
+            frame = bytes(self._pcm_buffer)
 
             self._pcm_buffer.clear()
 
@@ -533,9 +424,7 @@ class AudioDecoder:
         """
 
         async with self._lock:
-
             if self._closed:
-
                 return
 
             self._webm_buffer.clear()
@@ -558,9 +447,7 @@ class AudioDecoder:
         """
 
         async with self._lock:
-
             if self._closed:
-
                 return
 
             self._closed = True

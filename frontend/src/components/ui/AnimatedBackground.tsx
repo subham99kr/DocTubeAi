@@ -17,10 +17,7 @@ export default function AnimatedBackground() {
   return (
     <div className="particle-bg">
       {colors.map((color) => (
-        <div
-          key={color}
-          className={`particle ${color}`}
-        />
+        <div key={color} className={`particle ${color}`} />
       ))}
     </div>
   );

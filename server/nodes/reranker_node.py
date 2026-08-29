@@ -1,8 +1,9 @@
-from state.state import State
 import asyncio
+
 from global_modules.reranker import (
     get_reranker,
 )
+from state.state import State
 
 
 async def reranker_node(state: State):
@@ -17,25 +18,20 @@ async def reranker_node(state: State):
     )
 
     if not chunks:
-
         state["reranked_chunks"] = []
 
         return state
 
-    pairs = [
-        (query, chunk.get("content", ""))
-        for chunk in chunks
-    ]
+    pairs = [(query, chunk.get("content", "")) for chunk in chunks]
 
     scores = await asyncio.to_thread(
-                reranker.predict,
-                pairs,
-            )
+        reranker.predict,
+        pairs,
+    )
 
     ranked = []
 
     for chunk, score in zip(chunks, scores):
-
         chunk["rerank_score"] = float(score)
 
         ranked.append(chunk)

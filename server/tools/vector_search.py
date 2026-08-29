@@ -1,8 +1,8 @@
 import logging
+
 logger = logging.getLogger(__name__)
 from global_modules.embeddings import embeddings as embeddings_model
 from global_modules.mongo_collections import collection
-
 
 # async def run_vector_search(query: str, session_id: str) -> str:
 #     """

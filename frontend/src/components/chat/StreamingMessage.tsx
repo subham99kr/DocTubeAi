@@ -1,18 +1,12 @@
-import {
-  memo,
-} from "react";
+import { memo } from "react";
 
-import {
-  motion,
-} from "framer-motion";
+import { motion } from "framer-motion";
 
 type Props = {
   content: string;
 };
 
-function StreamingMessage({
-  content,
-}: Props) {
+function StreamingMessage({ content }: Props) {
   if (!content) {
     return null;
   }
@@ -50,6 +44,4 @@ function StreamingMessage({
   );
 }
 
-export default memo(
-  StreamingMessage
-);
+export default memo(StreamingMessage);

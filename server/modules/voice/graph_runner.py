@@ -47,7 +47,6 @@ Architecture:
     TTS
 """
 
-
 from __future__ import annotations
 
 import asyncio
@@ -60,19 +59,16 @@ from global_modules.http_client import (
 
 from .graph_runtime import (
     build_initial_state,
-    global_init,
     get_tavily_client,
+    global_init,
 )
-
 from .models import (
     VoiceGraphEvent,
     VoiceGraphEventType,
 )
-
 from .voice_status import (
     VoiceStatusManager,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +76,7 @@ logger = logging.getLogger(__name__)
 # ============================================================
 # VoiceGraphRunner
 # ============================================================
+
 
 class VoiceGraphRunner:
     """
@@ -116,9 +113,7 @@ class VoiceGraphRunner:
         # status messages.
         # ----------------------------------------------------
 
-        self.status_manager = (
-            VoiceStatusManager()
-        )
+        self.status_manager = VoiceStatusManager()
 
     # ========================================================
     # GRAPH
@@ -134,7 +129,6 @@ class VoiceGraphRunner:
         # ----------------------------------------------------
 
         if self.graph is not None:
-
             return self.graph
 
         # ----------------------------------------------------
@@ -163,34 +157,23 @@ class VoiceGraphRunner:
         normal chat workflow.
         """
 
-        http_client = (
-            await get_http_client()
-        )
+        http_client = await get_http_client()
 
         return {
             "configurable": {
-
                 # ------------------------------------------------
                 # Critical for PostgreSQL checkpoint persistence.
                 #
                 # The voice conversation and text conversation can
                 # share the same session_id if desired.
                 # ------------------------------------------------
-
                 "thread_id": session_id,
-
                 # ------------------------------------------------
                 # Existing shared services.
                 # ------------------------------------------------
-
-                "tavily_client":
-                    get_tavily_client(),
-
-                "http_client":
-                    http_client,
-
-                "session_id":
-                    session_id,
+                "tavily_client": get_tavily_client(),
+                "http_client": http_client,
+                "session_id": session_id,
             }
         }
 
@@ -239,15 +222,10 @@ class VoiceGraphRunner:
             return ""
 
         if not session_id:
-
-            raise ValueError(
-                "session_id is required "
-                "for voice graph execution."
-            )
+            raise ValueError("session_id is required for voice graph execution.")
 
         logger.info(
-            "🧠 Voice → LangGraph "
-            "session=%s text=%r",
+            "🧠 Voice → LangGraph session=%s text=%r",
             session_id,
             text,
         )
@@ -262,19 +240,13 @@ class VoiceGraphRunner:
         # Existing graph configuration
         # ----------------------------------------------------
 
-        config = await self._build_config(
-            session_id
-        )
+        config = await self._build_config(session_id)
 
         # ----------------------------------------------------
         # Existing graph state contract
         # ----------------------------------------------------
 
-        initial_state = (
-            build_initial_state(
-                text
-            )
-        )
+        initial_state = build_initial_state(text)
 
         # ----------------------------------------------------
         # Execute graph.
@@ -289,15 +261,10 @@ class VoiceGraphRunner:
         # Extract final assistant response.
         # ----------------------------------------------------
 
-        response = (
-            self._extract_response(
-                result
-            )
-        )
+        response = self._extract_response(result)
 
         logger.info(
-            "✅ Voice → LangGraph completed "
-            "session=%s response_length=%d",
+            "✅ Voice → LangGraph completed session=%s response_length=%d",
             session_id,
             len(response),
         )
@@ -363,16 +330,10 @@ class VoiceGraphRunner:
             return
 
         if not session_id:
-
-            raise ValueError(
-                "session_id is required "
-                "for voice graph execution."
-            )
+            raise ValueError("session_id is required for voice graph execution.")
 
         logger.info(
-            "🧠 Starting streaming "
-            "Voice → LangGraph execution "
-            "session=%s text=%r",
+            "🧠 Starting streaming Voice → LangGraph execution session=%s text=%r",
             session_id,
             text,
         )
@@ -393,25 +354,18 @@ class VoiceGraphRunner:
         # Existing graph configuration.
         # ----------------------------------------------------
 
-        config = await self._build_config(
-            session_id
-        )
+        config = await self._build_config(session_id)
 
         # ----------------------------------------------------
         # Existing state contract.
         # ----------------------------------------------------
 
-        initial_state = (
-            build_initial_state(
-                text
-            )
-        )
+        initial_state = build_initial_state(text)
 
         status_event_count = 0
         text_event_count = 0
 
         try:
-
             # ------------------------------------------------
             # Stream ALL LangGraph events.
             #
@@ -419,58 +373,39 @@ class VoiceGraphRunner:
             # the voice layer.
             # ------------------------------------------------
 
-            async for event in (
-                graph.astream_events(
-                    initial_state,
-                    config,
-                    version="v2",
-                )
+            async for event in graph.astream_events(
+                initial_state,
+                config,
+                version="v2",
             ):
-
-                event_type = event.get(
-                    "event"
-                )
+                event_type = event.get("event")
 
                 metadata = event.get(
                     "metadata",
                     {},
                 )
 
-                node_name = metadata.get(
-                    "langgraph_node"
-                )
+                node_name = metadata.get("langgraph_node")
 
                 # ============================================
                 # STATUS EVENTS
                 # ============================================
 
                 if event_type == "on_chain_start":
-
-                    status = (
-                        self.status_manager
-                        .get_status(
-                            node_name
-                        )
-                    )
+                    status = self.status_manager.get_status(node_name)
 
                     if status:
-
                         status_event_count += 1
 
                         logger.debug(
-                            "🎤 Graph status "
-                            "session=%s "
-                            "node=%s "
-                            "status=%r",
+                            "🎤 Graph status session=%s node=%s status=%r",
                             session_id,
                             node_name,
                             status,
                         )
 
                         yield VoiceGraphEvent(
-                            type=(
-                                VoiceGraphEventType.STATUS
-                            ),
+                            type=(VoiceGraphEventType.STATUS),
                             content=status,
                         )
 
@@ -478,10 +413,7 @@ class VoiceGraphRunner:
                 # FINAL ANSWER STREAM
                 # ============================================
 
-                if (
-                    event_type
-                    != "on_chat_model_stream"
-                ):
+                if event_type != "on_chat_model_stream":
                     continue
 
                 # ------------------------------------------------
@@ -506,17 +438,12 @@ class VoiceGraphRunner:
                     "simple_chat",
                     "rag_chatbot",
                 ):
-
                     continue
 
-                chunk = (
-                    event.get(
-                        "data",
-                        {},
-                    ).get(
-                        "chunk"
-                    )
-                )
+                chunk = event.get(
+                    "data",
+                    {},
+                ).get("chunk")
 
                 if chunk is None:
                     continue
@@ -539,19 +466,14 @@ class VoiceGraphRunner:
                 text_event_count += 1
 
                 logger.debug(
-                    "🎤 Graph response "
-                    "session=%s "
-                    "node=%s "
-                    "text=%r",
+                    "🎤 Graph response session=%s node=%s text=%r",
                     session_id,
                     node_name,
                     content,
                 )
 
                 yield VoiceGraphEvent(
-                    type=(
-                        VoiceGraphEventType.TEXT
-                    ),
+                    type=(VoiceGraphEventType.TEXT),
                     content=content,
                 )
 
@@ -567,22 +489,16 @@ class VoiceGraphRunner:
             )
 
         except asyncio.CancelledError:
-
             logger.info(
-                "🛑 Voice → LangGraph stream "
-                "cancelled "
-                "session=%s",
+                "🛑 Voice → LangGraph stream cancelled session=%s",
                 session_id,
             )
 
             raise
 
         except Exception:
-
             logger.exception(
-                "❌ Voice → LangGraph stream "
-                "failed "
-                "session=%s",
+                "❌ Voice → LangGraph stream failed session=%s",
                 session_id,
             )
 
@@ -610,24 +526,19 @@ class VoiceGraphRunner:
         """
 
         if result is None:
-
             return ""
 
         if isinstance(
             result,
             str,
         ):
-
             return result.strip()
 
         if not isinstance(
             result,
             dict,
         ):
-
-            return str(
-                result
-            ).strip()
+            return str(result).strip()
 
         # ----------------------------------------------------
         # Prefer explicit response fields if a future graph
@@ -641,20 +552,15 @@ class VoiceGraphRunner:
             "final_answer",
             "text",
         ):
-
-            value = result.get(
-                key
-            )
+            value = result.get(key)
 
             if isinstance(
                 value,
                 str,
             ):
-
                 value = value.strip()
 
                 if value:
-
                     return value
 
         # ----------------------------------------------------
@@ -668,10 +574,7 @@ class VoiceGraphRunner:
             [],
         )
 
-        for message in reversed(
-            messages
-        ):
-
+        for message in reversed(messages):
             content = getattr(
                 message,
                 "content",
@@ -682,13 +585,11 @@ class VoiceGraphRunner:
                 content,
                 str,
             ):
-
                 continue
 
             content = content.strip()
 
             if not content:
-
                 continue
 
             message_type = getattr(
@@ -708,7 +609,6 @@ class VoiceGraphRunner:
             # ------------------------------------------------
 
             if message_type != "ai":
-
                 continue
 
             if getattr(
@@ -716,15 +616,12 @@ class VoiceGraphRunner:
                 "tool_calls",
                 None,
             ):
-
                 continue
 
             return content
 
         logger.warning(
-            "⚠️ Could not identify final "
-            "assistant response from "
-            "LangGraph result."
+            "⚠️ Could not identify final assistant response from LangGraph result."
         )
 
         return ""

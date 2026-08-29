@@ -1,14 +1,8 @@
-import {
-  useState,
-  memo,
-} from "react";
+import { useState, memo } from "react";
 
 import MarkdownRenderer from "./MarkdownRenderer";
 
-import {
-  Copy,
-  Check,
-} from "lucide-react";
+import { Copy, Check } from "lucide-react";
 
 import type { Message } from "../../types/chat.types";
 
@@ -16,23 +10,16 @@ type Props = {
   message: Message;
 };
 
-function ChatMessage({
-  message,
-}: Props) {
-  const [copied, setCopied] =
-    useState(false);
+function ChatMessage({ message }: Props) {
+  const [copied, setCopied] = useState(false);
 
-  const isUser =
-    message.role === "user";
+  const isUser = message.role === "user";
 
-  const isStreaming =
-    message.streaming;
+  const isStreaming = message.streaming;
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(
-        message.content
-      );
+      await navigator.clipboard.writeText(message.content);
 
       setCopied(true);
 
@@ -40,19 +27,14 @@ function ChatMessage({
         setCopied(false);
       }, 1500);
     } catch (error) {
-      console.error(
-        "Copy failed:",
-        error
-      );
+      console.error("Copy failed:", error);
     }
   }
 
   return (
     <div
       className={`flex w-full min-w-0 ${
-        isUser
-          ? "justify-end"
-          : "justify-start"
+        isUser ? "justify-end" : "justify-start"
       }`}
     >
       <div
@@ -60,11 +42,7 @@ function ChatMessage({
           isUser
             ? "bg-blue-500/15 border-blue-400/20"
             : "bg-[#161b22]/80 border-white/10"
-        } ${
-          !isStreaming
-            ? "backdrop-blur-xl"
-            : ""
-        }`}
+        } ${!isStreaming ? "backdrop-blur-xl" : ""}`}
       >
         {/* Glow */}
         {!isStreaming && (
@@ -83,11 +61,7 @@ function ChatMessage({
             </div>
           ) : (
             // FULL MARKDOWN RENDER
-            <MarkdownRenderer
-              content={
-                message.content
-              }
-            />
+            <MarkdownRenderer content={message.content} />
           )}
         </div>
 

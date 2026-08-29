@@ -37,10 +37,7 @@ type AudioChunk = {
 
 const DEFAULT_AUDIO_MIME = "audio/mpeg";
 
-export default function VoiceMode({
-  onClose,
-  onTranscript,
-}: Props) {
+export default function VoiceMode({ onClose, onTranscript }: Props) {
   const { sessionId } = useChat();
 
   const mountedRef = useRef(false);
@@ -107,74 +104,53 @@ export default function VoiceMode({
   const [isConnected, setIsConnected] = useState(false);
   const [isMicrophoneReady, setIsMicrophoneReady] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isAssistantSpeaking, setIsAssistantSpeaking] =
-    useState(false);
+  const [isAssistantSpeaking, setIsAssistantSpeaking] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [liveTranscript, setLiveTranscript] = useState("");
   const [transcript, setTranscript] = useState("");
 
-  const [assistantResponse, setAssistantResponse] =
-    useState("");
-  const [assistantStatus, setAssistantStatus] =
-    useState("");
+  const [assistantResponse, setAssistantResponse] = useState("");
+  const [assistantStatus, setAssistantStatus] = useState("");
 
   const [error, setError] = useState<string | null>(null);
 
-  const safeSet = useCallback(
-    (fn: () => void, lifecycleId?: number) => {
-      if (!mountedRef.current) {
-        return;
-      }
+  const safeSet = useCallback((fn: () => void, lifecycleId?: number) => {
+    if (!mountedRef.current) {
+      return;
+    }
 
-      if (
-        lifecycleId !== undefined &&
-        lifecycleId !== lifecycleIdRef.current
-      ) {
-        return;
-      }
+    if (lifecycleId !== undefined && lifecycleId !== lifecycleIdRef.current) {
+      return;
+    }
 
-      fn();
-    },
-    [],
-  );
+    fn();
+  }, []);
 
   const getSessionId = useCallback(() => {
-    const id =
-      typeof sessionId === "string"
-        ? sessionId.trim()
-        : "";
+    const id = typeof sessionId === "string" ? sessionId.trim() : "";
 
     if (!id) {
-      throw new Error(
-        "Voice session ID is missing from ChatContext.",
-      );
+      throw new Error("Voice session ID is missing from ChatContext.");
     }
 
     return id;
   }, [sessionId]);
 
   const getWebSocketUrl = useCallback(() => {
-    const base = (
-      import.meta.env.VITE_BACKEND_URL ||
-      "http://127.0.0.1:8000"
-    )
+    const base = (import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000")
       .trim()
       .replace(/\/+$/, "");
 
     if (!base) {
-      throw new Error(
-        "VITE_BACKEND_URL is not configured.",
-      );
+      throw new Error("VITE_BACKEND_URL is not configured.");
     }
 
     const wsBase = base
       .replace(/^https:\/\//i, "wss://")
       .replace(/^http:\/\//i, "ws://");
 
-    return `${wsBase}/voice/ws/${encodeURIComponent(
-      getSessionId(),
-    )}`;
+    return `${wsBase}/voice/ws/${encodeURIComponent(getSessionId())}`;
   }, [getSessionId]);
 
   /*
@@ -183,30 +159,23 @@ export default function VoiceMode({
    * ============================================================
    */
 
-  const decodeBase64Audio = useCallback(
-    (value: string): ArrayBuffer => {
-      if (!value) {
-        throw new Error(
-          "Assistant audio data is empty.",
-        );
-      }
+  const decodeBase64Audio = useCallback((value: string): ArrayBuffer => {
+    if (!value) {
+      throw new Error("Assistant audio data is empty.");
+    }
 
-      const binary = atob(value);
+    const binary = atob(value);
 
-      const buffer = new ArrayBuffer(
-        binary.length,
-      );
+    const buffer = new ArrayBuffer(binary.length);
 
-      const bytes = new Uint8Array(buffer);
+    const bytes = new Uint8Array(buffer);
 
-      for (let i = 0; i < binary.length; i += 1) {
-        bytes[i] = binary.charCodeAt(i);
-      }
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
 
-      return buffer;
-    },
-    [],
-  );
+    return buffer;
+  }, []);
 
   /*
    * ============================================================
@@ -223,10 +192,7 @@ export default function VoiceMode({
 
         console.info("[Voice][Mic] paused");
       } catch (err) {
-        console.warn(
-          "[Voice][Mic] pause failed",
-          err,
-        );
+        console.warn("[Voice][Mic] pause failed", err);
       }
     }
 
@@ -260,10 +226,7 @@ export default function VoiceMode({
           setIsListening(true);
         });
       } catch (err) {
-        console.warn(
-          "[Voice][Mic] resume failed",
-          err,
-        );
+        console.warn("[Voice][Mic] resume failed", err);
       }
     }
   }, [safeSet]);
@@ -275,9 +238,7 @@ export default function VoiceMode({
    */
 
   const cleanupAudioStream = useCallback(() => {
-    console.info(
-      "[Voice][Audio] Cleaning continuous stream",
-    );
+    console.info("[Voice][Audio] Cleaning continuous stream");
 
     audioChunkQueueRef.current = [];
 
@@ -310,8 +271,7 @@ export default function VoiceMode({
 
     streamAudioRef.current = null;
 
-    const sourceBuffer =
-      sourceBufferRef.current;
+    const sourceBuffer = sourceBufferRef.current;
 
     if (sourceBuffer) {
       sourceBuffer.onupdateend = null;
@@ -320,8 +280,7 @@ export default function VoiceMode({
 
     sourceBufferRef.current = null;
 
-    const mediaSource =
-      mediaSourceRef.current;
+    const mediaSource = mediaSourceRef.current;
 
     if (mediaSource) {
       mediaSource.onsourceopen = null;
@@ -331,8 +290,7 @@ export default function VoiceMode({
 
     mediaSourceRef.current = null;
 
-    const objectUrl =
-      mediaSourceObjectUrlRef.current;
+    const objectUrl = mediaSourceObjectUrlRef.current;
 
     if (objectUrl) {
       try {
@@ -352,11 +310,9 @@ export default function VoiceMode({
    */
 
   const finishAudioStream = useCallback(() => {
-    const mediaSource =
-      mediaSourceRef.current;
+    const mediaSource = mediaSourceRef.current;
 
-    const sourceBuffer =
-      sourceBufferRef.current;
+    const sourceBuffer = sourceBufferRef.current;
 
     if (!mediaSource || !sourceBuffer) {
       return;
@@ -374,20 +330,13 @@ export default function VoiceMode({
       return;
     }
 
-    if (
-      mediaSource.readyState === "open"
-    ) {
+    if (mediaSource.readyState === "open") {
       try {
-        console.info(
-          "[Voice][Audio] Ending continuous stream",
-        );
+        console.info("[Voice][Audio] Ending continuous stream");
 
         mediaSource.endOfStream();
       } catch (err) {
-        console.warn(
-          "[Voice][Audio] endOfStream failed",
-          err,
-        );
+        console.warn("[Voice][Audio] endOfStream failed", err);
       }
     }
   }, []);
@@ -399,8 +348,7 @@ export default function VoiceMode({
    */
 
   const appendNextAudioChunk = useCallback(() => {
-    const sourceBuffer =
-      sourceBufferRef.current;
+    const sourceBuffer = sourceBufferRef.current;
 
     if (!sourceBuffer) {
       return;
@@ -414,8 +362,7 @@ export default function VoiceMode({
       return;
     }
 
-    const chunk =
-      audioChunkQueueRef.current.shift();
+    const chunk = audioChunkQueueRef.current.shift();
 
     if (!chunk) {
       finishAudioStream();
@@ -423,19 +370,12 @@ export default function VoiceMode({
       return;
     }
 
-    if (
-      audioStreamTurnIdRef.current !==
-      chunk.turnId
-    ) {
-      console.warn(
-        "[Voice][Audio] Dropping stale stream chunk",
-        {
-          chunkTurnId: chunk.turnId,
-          activeTurnId:
-            audioStreamTurnIdRef.current,
-          chunkId: chunk.chunkId,
-        },
-      );
+    if (audioStreamTurnIdRef.current !== chunk.turnId) {
+      console.warn("[Voice][Audio] Dropping stale stream chunk", {
+        chunkTurnId: chunk.turnId,
+        activeTurnId: audioStreamTurnIdRef.current,
+        chunkId: chunk.chunkId,
+      });
 
       appendNextAudioChunk();
 
@@ -456,9 +396,7 @@ export default function VoiceMode({
        * Every chunk is appended to the SAME SourceBuffer.
        */
 
-      sourceBuffer.appendBuffer(
-        chunk.bytes,
-      );
+      sourceBuffer.appendBuffer(chunk.bytes);
 
       // console.info(
       //   "[Voice][Audio] APPEND stream chunk",
@@ -473,14 +411,11 @@ export default function VoiceMode({
     } catch (err) {
       audioAppendingRef.current = false;
 
-      console.error(
-        "[Voice][Audio] appendBuffer failed",
-        {
-          turnId: chunk.turnId,
-          chunkId: chunk.chunkId,
-          error: err,
-        },
-      );
+      console.error("[Voice][Audio] appendBuffer failed", {
+        turnId: chunk.turnId,
+        chunkId: chunk.chunkId,
+        error: err,
+      });
 
       safeSet(() => {
         setError(
@@ -515,8 +450,7 @@ export default function VoiceMode({
 
       if (
         audioStreamStartedRef.current &&
-        audioStreamTurnIdRef.current ===
-          turnId
+        audioStreamTurnIdRef.current === turnId
       ) {
         return;
       }
@@ -528,31 +462,22 @@ export default function VoiceMode({
 
       cleanupAudioStream();
 
-      audioStreamTurnIdRef.current =
-        turnId;
+      audioStreamTurnIdRef.current = turnId;
 
       audioStreamStartedRef.current = true;
 
-      audioStreamCompletedRef.current =
-        false;
+      audioStreamCompletedRef.current = false;
 
-      const normalizedMime =
-        mimeType || DEFAULT_AUDIO_MIME;
+      const normalizedMime = mimeType || DEFAULT_AUDIO_MIME;
 
-      if (
-        !MediaSource.isTypeSupported(
-          normalizedMime,
-        )
-      ) {
+      if (!MediaSource.isTypeSupported(normalizedMime)) {
         console.error(
           "[Voice][Audio] MediaSource does not support",
           normalizedMime,
         );
 
         safeSet(() => {
-          setError(
-            `Browser does not support ${normalizedMime} streaming.`,
-          );
+          setError(`Browser does not support ${normalizedMime} streaming.`);
         });
 
         return;
@@ -560,14 +485,11 @@ export default function VoiceMode({
 
       const mediaSource = new MediaSource();
 
-      mediaSourceRef.current =
-        mediaSource;
+      mediaSourceRef.current = mediaSource;
 
-      const objectUrl =
-        URL.createObjectURL(mediaSource);
+      const objectUrl = URL.createObjectURL(mediaSource);
 
-      mediaSourceObjectUrlRef.current =
-        objectUrl;
+      mediaSourceObjectUrlRef.current = objectUrl;
 
       const audio = new Audio();
 
@@ -585,8 +507,7 @@ export default function VoiceMode({
         //   },
         // );
 
-        assistantSpeakingRef.current =
-          false;
+        assistantSpeakingRef.current = false;
 
         safeSet(() => {
           setIsAssistantSpeaking(false);
@@ -596,34 +517,25 @@ export default function VoiceMode({
       };
 
       audio.onerror = (event) => {
-        console.error(
-          "[Voice][Audio] continuous stream error",
-          {
-            turnId,
-            event,
-            mediaError: audio.error,
-          },
-        );
+        console.error("[Voice][Audio] continuous stream error", {
+          turnId,
+          event,
+          mediaError: audio.error,
+        });
 
-        assistantSpeakingRef.current =
-          false;
+        assistantSpeakingRef.current = false;
 
         safeSet(() => {
           setIsAssistantSpeaking(false);
 
-          setError(
-            "Browser could not play assistant audio stream.",
-          );
+          setError("Browser could not play assistant audio stream.");
         });
 
         resumeMicrophone();
       };
 
       mediaSource.onsourceopen = () => {
-        if (
-          mediaSourceRef.current !==
-          mediaSource
-        ) {
+        if (mediaSourceRef.current !== mediaSource) {
           return;
         }
 
@@ -635,63 +547,43 @@ export default function VoiceMode({
         //   },
         // );
 
-        audioSourceOpenedRef.current =
-          true;
+        audioSourceOpenedRef.current = true;
 
         try {
-          const sourceBuffer =
-            mediaSource.addSourceBuffer(
-              normalizedMime,
-            );
+          const sourceBuffer = mediaSource.addSourceBuffer(normalizedMime);
 
-          sourceBuffer.mode =
-            "sequence";
+          sourceBuffer.mode = "sequence";
 
-          sourceBufferRef.current =
-            sourceBuffer;
+          sourceBufferRef.current = sourceBuffer;
 
           sourceBuffer.onupdateend = () => {
-            audioAppendingRef.current =
-              false;
+            audioAppendingRef.current = false;
 
             /*
              * First chunk has now been appended.
              * Start the ONE audio element.
              */
 
-            if (
-              !assistantSpeakingRef.current
-            ) {
-              assistantSpeakingRef.current =
-                true;
+            if (!assistantSpeakingRef.current) {
+              assistantSpeakingRef.current = true;
 
               safeSet(() => {
                 setIsAssistantSpeaking(true);
               });
             }
 
-            const currentAudio =
-              streamAudioRef.current;
+            const currentAudio = streamAudioRef.current;
 
-            if (
-              currentAudio &&
-              currentAudio.paused
-            ) {
+            if (currentAudio && currentAudio.paused) {
               void currentAudio
                 .play()
                 .then(() => {
-                  console.info(
-                    "[Voice][Audio] PLAYING continuous stream",
-                    {
-                      turnId,
-                    },
-                  );
+                  console.info("[Voice][Audio] PLAYING continuous stream", {
+                    turnId,
+                  });
                 })
                 .catch((err) => {
-                  console.error(
-                    "[Voice][Audio] play failed",
-                    err,
-                  );
+                  console.error("[Voice][Audio] play failed", err);
 
                   safeSet(() => {
                     setError(
@@ -716,21 +608,15 @@ export default function VoiceMode({
           };
 
           sourceBuffer.onerror = (event) => {
-            audioAppendingRef.current =
-              false;
+            audioAppendingRef.current = false;
 
-            console.error(
-              "[Voice][Audio] SourceBuffer error",
-              {
-                turnId,
-                event,
-              },
-            );
+            console.error("[Voice][Audio] SourceBuffer error", {
+              turnId,
+              event,
+            });
 
             safeSet(() => {
-              setError(
-                "Assistant audio stream failed.",
-              );
+              setError("Assistant audio stream failed.");
             });
           };
 
@@ -741,10 +627,7 @@ export default function VoiceMode({
 
           appendNextAudioChunk();
         } catch (err) {
-          console.error(
-            "[Voice][Audio] Could not create SourceBuffer",
-            err,
-          );
+          console.error("[Voice][Audio] Could not create SourceBuffer", err);
 
           safeSet(() => {
             setError(
@@ -757,29 +640,18 @@ export default function VoiceMode({
       };
 
       mediaSource.onsourceended = () => {
-        console.info(
-          "[Voice][Audio] MediaSource ended",
-          {
-            turnId,
-          },
-        );
+        console.info("[Voice][Audio] MediaSource ended", {
+          turnId,
+        });
       };
 
       mediaSource.onsourceclose = () => {
-        console.info(
-          "[Voice][Audio] MediaSource closed",
-          {
-            turnId,
-          },
-        );
+        console.info("[Voice][Audio] MediaSource closed", {
+          turnId,
+        });
       };
     },
-    [
-      appendNextAudioChunk,
-      cleanupAudioStream,
-      resumeMicrophone,
-      safeSet,
-    ],
+    [appendNextAudioChunk, cleanupAudioStream, resumeMicrophone, safeSet],
   );
 
   /*
@@ -788,114 +660,85 @@ export default function VoiceMode({
    * ============================================================
    */
 
-  const enqueueAssistantAudio =
-    useCallback(
-      (
-        event: Extract<
-          VoiceEvent,
-          { type: "assistant_audio" }
-        >,
-      ) => {
+  const enqueueAssistantAudio = useCallback(
+    (event: Extract<VoiceEvent, { type: "assistant_audio" }>) => {
+      if (activeAssistantTurnIdRef.current !== event.turn_id) {
+        // console.warn(
+        //   "[Voice][Audio] Ignoring stale audio",
+        //   {
+        //     eventTurn: event.turn_id,
+        //     activeTurn:
+        //       activeAssistantTurnIdRef.current,
+        //   },
+        // );
+
+        return;
+      }
+
+      try {
+        const bytes = decodeBase64Audio(event.data);
+
+        const mimeType = event.mime_type?.trim() || DEFAULT_AUDIO_MIME;
+
+        /*
+         * Start ONE continuous stream for
+         * this assistant turn.
+         */
+
         if (
-          activeAssistantTurnIdRef.current !==
-          event.turn_id
+          !audioStreamStartedRef.current ||
+          audioStreamTurnIdRef.current !== event.turn_id
         ) {
-          // console.warn(
-          //   "[Voice][Audio] Ignoring stale audio",
-          //   {
-          //     eventTurn: event.turn_id,
-          //     activeTurn:
-          //       activeAssistantTurnIdRef.current,
-          //   },
-          // );
-
-          return;
+          startAudioStream(event.turn_id, mimeType);
         }
 
-        try {
-          const bytes =
-            decodeBase64Audio(event.data);
+        const chunk: AudioChunk = {
+          turnId: event.turn_id,
+          chunkId: nextAudioChunkIdRef.current++,
+          bytes,
+          mimeType,
+        };
 
-          const mimeType =
-            event.mime_type?.trim() ||
-            DEFAULT_AUDIO_MIME;
+        audioChunkQueueRef.current.push(chunk);
 
-          /*
-           * Start ONE continuous stream for
-           * this assistant turn.
-           */
+        // console.info(
+        //   "[Voice][Audio] QUEUED stream chunk",
+        //   {
+        //     turnId: chunk.turnId,
+        //     chunkId: chunk.chunkId,
+        //     bytes: chunk.bytes.byteLength,
+        //     queueLength:
+        //       audioChunkQueueRef.current
+        //         .length,
+        //     appending:
+        //       audioAppendingRef.current,
+        //   },
+        // );
 
-          if (
-            !audioStreamStartedRef.current ||
-            audioStreamTurnIdRef.current !==
-              event.turn_id
-          ) {
-            startAudioStream(
-              event.turn_id,
-              mimeType,
-            );
-          }
+        /*
+         * If SourceBuffer is already available,
+         * immediately feed it.
+         *
+         * Otherwise sourceopen will do it.
+         */
 
-          const chunk: AudioChunk = {
-            turnId: event.turn_id,
-            chunkId:
-              nextAudioChunkIdRef.current++,
-            bytes,
-            mimeType,
-          };
-
-          audioChunkQueueRef.current.push(
-            chunk,
-          );
-
-          // console.info(
-          //   "[Voice][Audio] QUEUED stream chunk",
-          //   {
-          //     turnId: chunk.turnId,
-          //     chunkId: chunk.chunkId,
-          //     bytes: chunk.bytes.byteLength,
-          //     queueLength:
-          //       audioChunkQueueRef.current
-          //         .length,
-          //     appending:
-          //       audioAppendingRef.current,
-          //   },
-          // );
-
-          /*
-           * If SourceBuffer is already available,
-           * immediately feed it.
-           *
-           * Otherwise sourceopen will do it.
-           */
-
-          if (
-            audioSourceOpenedRef.current
-          ) {
-            appendNextAudioChunk();
-          }
-        } catch (err) {
-          console.error(
-            "[Voice][Audio] decode failed",
-            err,
-          );
-
-          safeSet(() => {
-            setError(
-              err instanceof Error
-                ? err.message
-                : "Could not decode assistant audio.",
-            );
-          });
+        if (audioSourceOpenedRef.current) {
+          appendNextAudioChunk();
         }
-      },
-      [
-        appendNextAudioChunk,
-        decodeBase64Audio,
-        safeSet,
-        startAudioStream,
-      ],
-    );
+      } catch (err) {
+        console.error("[Voice][Audio] decode failed", err);
+
+        safeSet(() => {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Could not decode assistant audio.",
+          );
+        });
+      }
+    },
+    [appendNextAudioChunk, decodeBase64Audio, safeSet, startAudioStream],
+  );
 
   /*
    * ============================================================
@@ -903,40 +746,28 @@ export default function VoiceMode({
    * ============================================================
    */
 
-  const stopAssistantPlayback =
-    useCallback(
-      (resumeAfter: boolean) => {
-        console.info(
-          "[Voice][Audio] INTERRUPT / CLEAR",
-          {
-            queued:
-              audioChunkQueueRef.current
-                .length,
-          },
-        );
+  const stopAssistantPlayback = useCallback(
+    (resumeAfter: boolean) => {
+      console.info("[Voice][Audio] INTERRUPT / CLEAR", {
+        queued: audioChunkQueueRef.current.length,
+      });
 
-        cleanupAudioStream();
+      cleanupAudioStream();
 
-        assistantSpeakingRef.current =
-          false;
+      assistantSpeakingRef.current = false;
 
-        assistantGeneratingRef.current =
-          false;
+      assistantGeneratingRef.current = false;
 
-        safeSet(() => {
-          setIsAssistantSpeaking(false);
-        });
+      safeSet(() => {
+        setIsAssistantSpeaking(false);
+      });
 
-        if (resumeAfter) {
-          resumeMicrophone();
-        }
-      },
-      [
-        cleanupAudioStream,
-        resumeMicrophone,
-        safeSet,
-      ],
-    );
+      if (resumeAfter) {
+        resumeMicrophone();
+      }
+    },
+    [cleanupAudioStream, resumeMicrophone, safeSet],
+  );
 
   /*
    * ============================================================
@@ -949,77 +780,45 @@ export default function VoiceMode({
       if (
         microphoneStartedRef.current ||
         !mountedRef.current ||
-        lifecycleId !==
-          lifecycleIdRef.current
+        lifecycleId !== lifecycleIdRef.current
       ) {
         return;
       }
 
       const ws = websocketRef.current;
 
-      if (
-        !ws ||
-        ws.readyState !== WebSocket.OPEN
-      ) {
-        console.warn(
-          "[Voice][Mic] WebSocket is not open",
-        );
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.warn("[Voice][Mic] WebSocket is not open");
 
         return;
       }
 
       try {
-        const stream =
-          await navigator.mediaDevices.getUserMedia(
-            {
-              audio: {
-                channelCount: 1,
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-              },
-            },
-          );
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
 
-        if (
-          !mountedRef.current ||
-          lifecycleId !==
-            lifecycleIdRef.current
-        ) {
-          stream
-            .getTracks()
-            .forEach((track) =>
-              track.stop(),
-            );
+        if (!mountedRef.current || lifecycleId !== lifecycleIdRef.current) {
+          stream.getTracks().forEach((track) => track.stop());
 
           return;
         }
 
-        mediaStreamRef.current =
-          stream;
+        mediaStreamRef.current = stream;
 
         let mimeType = "";
 
-        if (
-          MediaRecorder.isTypeSupported(
-            "audio/webm;codecs=opus",
-          )
-        ) {
-          mimeType =
-            "audio/webm;codecs=opus";
-        } else if (
-          MediaRecorder.isTypeSupported(
-            "audio/webm",
-          )
-        ) {
+        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+          mimeType = "audio/webm;codecs=opus";
+        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
           mimeType = "audio/webm";
-        } else if (
-          MediaRecorder.isTypeSupported(
-            "audio/ogg;codecs=opus",
-          )
-        ) {
-          mimeType =
-            "audio/ogg;codecs=opus";
+        } else if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) {
+          mimeType = "audio/ogg;codecs=opus";
         }
 
         const recorder = mimeType
@@ -1028,20 +827,12 @@ export default function VoiceMode({
             })
           : new MediaRecorder(stream);
 
-        mediaRecorderRef.current =
-          recorder;
+        mediaRecorderRef.current = recorder;
 
-        microphoneStartedRef.current =
-          true;
+        microphoneStartedRef.current = true;
 
-        recorder.ondataavailable = (
-          event,
-        ) => {
-          if (
-            !mountedRef.current ||
-            lifecycleId !==
-              lifecycleIdRef.current
-          ) {
+        recorder.ondataavailable = (event) => {
+          if (!mountedRef.current || lifecycleId !== lifecycleIdRef.current) {
             return;
           }
 
@@ -1054,101 +845,62 @@ export default function VoiceMode({
            * assistant is generating or speaking.
            */
 
-          if (
-            assistantGeneratingRef.current ||
-            assistantSpeakingRef.current
-          ) {
+          if (assistantGeneratingRef.current || assistantSpeakingRef.current) {
             return;
           }
 
-          const socket =
-            websocketRef.current;
+          const socket = websocketRef.current;
 
-          if (
-            !socket ||
-            socket.readyState !==
-              WebSocket.OPEN
-          ) {
+          if (!socket || socket.readyState !== WebSocket.OPEN) {
             return;
           }
 
           try {
             socket.send(event.data);
           } catch (err) {
-            console.error(
-              "[Voice][Mic] send failed",
-              err,
-            );
+            console.error("[Voice][Mic] send failed", err);
           }
         };
 
         recorder.onstart = () => {
-          console.info(
-            "[Voice][Mic] recording started",
-            {
-              mimeType:
-                recorder.mimeType,
-            },
-          );
+          console.info("[Voice][Mic] recording started", {
+            mimeType: recorder.mimeType,
+          });
 
-          safeSet(
-            () => {
-              setIsListening(true);
-              setIsMicrophoneReady(true);
-            },
-            lifecycleId,
-          );
+          safeSet(() => {
+            setIsListening(true);
+            setIsMicrophoneReady(true);
+          }, lifecycleId);
         };
 
         recorder.onstop = () => {
-          safeSet(
-            () =>
-              setIsListening(false),
-            lifecycleId,
-          );
+          safeSet(() => setIsListening(false), lifecycleId);
         };
 
         recorder.onerror = (event) => {
-          console.error(
-            "[Voice][Mic] recorder error",
-            event,
-          );
+          console.error("[Voice][Mic] recorder error", event);
 
-          safeSet(
-            () => {
-              setError(
-                "Microphone recording failed.",
-              );
+          safeSet(() => {
+            setError("Microphone recording failed.");
 
-              setIsListening(false);
-            },
-            lifecycleId,
-          );
+            setIsListening(false);
+          }, lifecycleId);
         };
 
         recorder.start(250);
       } catch (err) {
-        microphoneStartedRef.current =
-          false;
+        microphoneStartedRef.current = false;
 
-        console.error(
-          "[Voice][Mic] start failed",
-          err,
-        );
+        console.error("[Voice][Mic] start failed", err);
 
-        safeSet(
-          () => {
-            setIsMicrophoneReady(false);
-            setIsListening(false);
+        safeSet(() => {
+          setIsMicrophoneReady(false);
+          setIsListening(false);
 
-            setError(
-              err instanceof Error
-                ? err.message
-                : "Could not access microphone.",
-            );
-          },
-          lifecycleId,
-        );
+          setError(
+            err instanceof Error ? err.message : "Could not access microphone.",
+          );
+        }, lifecycleId);
       }
     },
     [safeSet],
@@ -1169,30 +921,23 @@ export default function VoiceMode({
     sessionStartedRef.current = false;
     microphoneStartedRef.current = false;
 
-    assistantGeneratingRef.current =
-      false;
+    assistantGeneratingRef.current = false;
 
-    assistantSpeakingRef.current =
-      false;
+    assistantSpeakingRef.current = false;
 
     activeUserTurnIdRef.current = null;
-    activeAssistantTurnIdRef.current =
-      null;
+    activeAssistantTurnIdRef.current = null;
 
     latestUserTurnIdRef.current = -1;
     latestAssistantTurnIdRef.current = -1;
 
     cleanupAudioStream();
 
-    const recorder =
-      mediaRecorderRef.current;
+    const recorder = mediaRecorderRef.current;
 
     mediaRecorderRef.current = null;
 
-    if (
-      recorder &&
-      recorder.state !== "inactive"
-    ) {
+    if (recorder && recorder.state !== "inactive") {
       try {
         recorder.ondataavailable = null;
         recorder.onstart = null;
@@ -1205,23 +950,19 @@ export default function VoiceMode({
       }
     }
 
-    const stream =
-      mediaStreamRef.current;
+    const stream = mediaStreamRef.current;
 
     mediaStreamRef.current = null;
 
-    stream
-      ?.getTracks()
-      .forEach((track) => {
-        try {
-          track.stop();
-        } catch {
-          // cleanup
-        }
-      });
+    stream?.getTracks().forEach((track) => {
+      try {
+        track.stop();
+      } catch {
+        // cleanup
+      }
+    });
 
-    const ws =
-      websocketRef.current;
+    const ws = websocketRef.current;
 
     websocketRef.current = null;
 
@@ -1233,10 +974,8 @@ export default function VoiceMode({
 
       try {
         if (
-          ws.readyState ===
-            WebSocket.OPEN ||
-          ws.readyState ===
-            WebSocket.CONNECTING
+          ws.readyState === WebSocket.OPEN ||
+          ws.readyState === WebSocket.CONNECTING
         ) {
           ws.close();
         }
@@ -1260,452 +999,310 @@ export default function VoiceMode({
    * ============================================================
    */
 
-  const handleWebSocketEvent =
-    useCallback(
-      (
-        event: VoiceEvent,
-        lifecycleId: number,
-      ) => {
-        if (
-          !mountedRef.current ||
-          lifecycleId !==
-            lifecycleIdRef.current
-        ) {
+  const handleWebSocketEvent = useCallback(
+    (event: VoiceEvent, lifecycleId: number) => {
+      if (!mountedRef.current || lifecycleId !== lifecycleIdRef.current) {
+        return;
+      }
+
+      console.info("[Voice] Handling event:", event);
+
+      switch (event.type) {
+        case "connected": {
+          safeSet(() => {
+            setIsConnected(true);
+            setError(null);
+          }, lifecycleId);
+
           return;
         }
 
-        console.info(
-          "[Voice] Handling event:",
-          event,
-        );
+        case "session_started": {
+          sessionStartedRef.current = true;
 
-        switch (event.type) {
-          case "connected": {
-            safeSet(
-              () => {
-                setIsConnected(true);
-                setError(null);
-              },
-              lifecycleId,
-            );
+          void startMicrophone(lifecycleId);
 
-            return;
-          }
-
-          case "session_started": {
-            sessionStartedRef.current =
-              true;
-
-            void startMicrophone(
-              lifecycleId,
-            );
-
-            return;
-          }
-
-          case "user_speech_started": {
-            if (
-              event.turn_id <
-              latestUserTurnIdRef.current
-            ) {
-              return;
-            }
-
-            latestUserTurnIdRef.current =
-              event.turn_id;
-
-            activeUserTurnIdRef.current =
-              event.turn_id;
-
-            /*
-             * User interrupted assistant.
-             */
-
-            if (
-              assistantGeneratingRef.current ||
-              assistantSpeakingRef.current
-            ) {
-              stopAssistantPlayback(
-                false,
-              );
-
-              activeAssistantTurnIdRef.current =
-                null;
-            }
-
-            safeSet(
-              () => {
-                setIsListening(true);
-                setIsProcessing(false);
-                setLiveTranscript("");
-              },
-              lifecycleId,
-            );
-
-            return;
-          }
-
-          case "transcript_partial": {
-            if (
-              event.turn_id <
-              latestUserTurnIdRef.current
-            ) {
-              return;
-            }
-
-            latestUserTurnIdRef.current =
-              event.turn_id;
-
-            activeUserTurnIdRef.current =
-              event.turn_id;
-
-            safeSet(
-              () =>
-                setLiveTranscript(
-                  event.text,
-                ),
-              lifecycleId,
-            );
-
-            return;
-          }
-
-          case "transcript_final": {
-            if (
-              event.turn_id <
-              latestUserTurnIdRef.current
-            ) {
-              return;
-            }
-
-            latestUserTurnIdRef.current =
-              event.turn_id;
-
-            safeSet(
-              () => {
-                setTranscript(
-                  event.text,
-                );
-
-                setLiveTranscript(
-                  event.text,
-                );
-              },
-              lifecycleId,
-            );
-
-            return;
-          }
-
-          case "user_turn_complete": {
-            if (
-              event.turn_id <
-              latestUserTurnIdRef.current
-            ) {
-              return;
-            }
-
-            latestUserTurnIdRef.current =
-              event.turn_id;
-
-            activeUserTurnIdRef.current =
-              event.turn_id;
-
-            safeSet(
-              () => {
-                setTranscript(
-                  event.text,
-                );
-
-                setLiveTranscript(
-                  event.text,
-                );
-
-                setIsListening(false);
-                setIsProcessing(true);
-              },
-              lifecycleId,
-            );
-
-            return;
-          }
-
-          case "assistant_started": {
-            if (
-              event.turn_id <
-              latestAssistantTurnIdRef.current
-            ) {
-              return;
-            }
-
-            latestAssistantTurnIdRef.current =
-              event.turn_id;
-
-            /*
-             * New assistant turn.
-             *
-             * Kill ONLY the previous stream.
-             */
-
-            stopAssistantPlayback(
-              false,
-            );
-
-            activeAssistantTurnIdRef.current =
-              event.turn_id;
-
-            assistantGeneratingRef.current =
-              true;
-
-            assistantSpeakingRef.current =
-              false;
-
-            pauseMicrophone();
-
-            safeSet(
-              () => {
-                setAssistantResponse(
-                  "",
-                );
-
-                setAssistantStatus(
-                  "",
-                );
-
-                setIsProcessing(false);
-
-                setIsAssistantSpeaking(
-                  false,
-                );
-              },
-              lifecycleId,
-            );
-
-            return;
-          }
-
-          case "assistant_status": {
-            if (
-              event.turn_id !==
-              activeAssistantTurnIdRef.current
-            ) {
-              return;
-            }
-
-            safeSet(
-              () => {
-                setAssistantStatus(
-                  event.message,
-                );
-
-                setIsProcessing(true);
-              },
-              lifecycleId,
-            );
-
-            return;
-          }
-
-          case "assistant_text": {
-            if (
-              event.turn_id !==
-              activeAssistantTurnIdRef.current
-            ) {
-              return;
-            }
-
-            /*
-             * TEXT IS COMPLETELY INDEPENDENT
-             * FROM AUDIO.
-             *
-             * It is rendered immediately.
-             *
-             * At the same time the MP3 stream
-             * is being appended to MediaSource.
-             */
-
-            safeSet(
-              () =>
-                setAssistantResponse(
-                  (previous) =>
-                    previous + event.text,
-                ),
-              lifecycleId,
-            );
-
-            return;
-          }
-
-          case "assistant_audio": {
-            /*
-             * ONLY enqueue raw MP3 bytes.
-             *
-             * No Audio().
-             * No Blob URL per chunk.
-             * No waiting for previous chunk.
-             */
-
-            enqueueAssistantAudio(
-              event,
-            );
-
-            return;
-          }
-
-          case "assistant_completed": {
-            if (
-              event.turn_id !==
-              activeAssistantTurnIdRef.current
-            ) {
-              return;
-            }
-
-            /*
-             * IMPORTANT:
-             *
-             * This means backend generation is
-             * finished.
-             *
-             * It does NOT mean playback is finished.
-             */
-
-            assistantGeneratingRef.current =
-              false;
-
-            audioStreamCompletedRef.current =
-              true;
-
-            safeSet(
-              () => {
-                setIsProcessing(false);
-                setAssistantStatus("");
-              },
-              lifecycleId,
-            );
-
-            console.info(
-              "[Voice] Assistant generation completed",
-              {
-                turnId:
-                  event.turn_id,
-
-                queuedAudio:
-                  audioChunkQueueRef.current
-                    .length,
-
-                appending:
-                  audioAppendingRef.current,
-              },
-            );
-
-            /*
-             * If all chunks have already been
-             * appended, close MediaSource.
-             *
-             * Otherwise appendNextAudioChunk()
-             * will eventually call finishAudioStream().
-             */
-
-            finishAudioStream();
-
-            return;
-          }
-
-          case "interrupted": {
-            stopAssistantPlayback(
-              false,
-            );
-
-            activeAssistantTurnIdRef.current =
-              null;
-
-            safeSet(
-              () => {
-                setAssistantResponse(
-                  "",
-                );
-
-                setAssistantStatus(
-                  "",
-                );
-
-                setIsProcessing(false);
-
-                setIsAssistantSpeaking(
-                  false,
-                );
-
-                setIsListening(true);
-              },
-              lifecycleId,
-            );
-
-            resumeMicrophone();
-
-            return;
-          }
-
-          case "pong": {
-            console.info(
-              "[Voice] pong",
-            );
-
-            return;
-          }
-
-          case "error": {
-            const message =
-              event.message ||
-              event.data ||
-              "Voice backend error.";
-
-            console.error(
-              "[Voice] backend error",
-              {
-                message,
-                code: event.code,
-              },
-            );
-
-            safeSet(
-              () => {
-                setError(message);
-                setIsProcessing(false);
-              },
-              lifecycleId,
-            );
-
-            return;
-          }
-
-          case "session_ended": {
-            cleanup();
-
-            return;
-          }
-
-          default: {
-            const exhaustive: never =
-              event;
-
-            console.warn(
-              "[Voice] Unknown event:",
-              exhaustive,
-            );
-          }
+          return;
         }
-      },
-      [
-        cleanup,
-        enqueueAssistantAudio,
-        finishAudioStream,
-        pauseMicrophone,
-        resumeMicrophone,
-        safeSet,
-        startMicrophone,
-        stopAssistantPlayback,
-      ],
-    );
+
+        case "user_speech_started": {
+          if (event.turn_id < latestUserTurnIdRef.current) {
+            return;
+          }
+
+          latestUserTurnIdRef.current = event.turn_id;
+
+          activeUserTurnIdRef.current = event.turn_id;
+
+          /*
+           * User interrupted assistant.
+           */
+
+          if (assistantGeneratingRef.current || assistantSpeakingRef.current) {
+            stopAssistantPlayback(false);
+
+            activeAssistantTurnIdRef.current = null;
+          }
+
+          safeSet(() => {
+            setIsListening(true);
+            setIsProcessing(false);
+            setLiveTranscript("");
+          }, lifecycleId);
+
+          return;
+        }
+
+        case "transcript_partial": {
+          if (event.turn_id < latestUserTurnIdRef.current) {
+            return;
+          }
+
+          latestUserTurnIdRef.current = event.turn_id;
+
+          activeUserTurnIdRef.current = event.turn_id;
+
+          safeSet(() => setLiveTranscript(event.text), lifecycleId);
+
+          return;
+        }
+
+        case "transcript_final": {
+          if (event.turn_id < latestUserTurnIdRef.current) {
+            return;
+          }
+
+          latestUserTurnIdRef.current = event.turn_id;
+
+          safeSet(() => {
+            setTranscript(event.text);
+
+            setLiveTranscript(event.text);
+          }, lifecycleId);
+
+          return;
+        }
+
+        case "user_turn_complete": {
+          if (event.turn_id < latestUserTurnIdRef.current) {
+            return;
+          }
+
+          latestUserTurnIdRef.current = event.turn_id;
+
+          activeUserTurnIdRef.current = event.turn_id;
+
+          safeSet(() => {
+            setTranscript(event.text);
+
+            setLiveTranscript(event.text);
+
+            setIsListening(false);
+            setIsProcessing(true);
+          }, lifecycleId);
+
+          return;
+        }
+
+        case "assistant_started": {
+          if (event.turn_id < latestAssistantTurnIdRef.current) {
+            return;
+          }
+
+          latestAssistantTurnIdRef.current = event.turn_id;
+
+          /*
+           * New assistant turn.
+           *
+           * Kill ONLY the previous stream.
+           */
+
+          stopAssistantPlayback(false);
+
+          activeAssistantTurnIdRef.current = event.turn_id;
+
+          assistantGeneratingRef.current = true;
+
+          assistantSpeakingRef.current = false;
+
+          pauseMicrophone();
+
+          safeSet(() => {
+            setAssistantResponse("");
+
+            setAssistantStatus("");
+
+            setIsProcessing(false);
+
+            setIsAssistantSpeaking(false);
+          }, lifecycleId);
+
+          return;
+        }
+
+        case "assistant_status": {
+          if (event.turn_id !== activeAssistantTurnIdRef.current) {
+            return;
+          }
+
+          safeSet(() => {
+            setAssistantStatus(event.message);
+
+            setIsProcessing(true);
+          }, lifecycleId);
+
+          return;
+        }
+
+        case "assistant_text": {
+          if (event.turn_id !== activeAssistantTurnIdRef.current) {
+            return;
+          }
+
+          /*
+           * TEXT IS COMPLETELY INDEPENDENT
+           * FROM AUDIO.
+           *
+           * It is rendered immediately.
+           *
+           * At the same time the MP3 stream
+           * is being appended to MediaSource.
+           */
+
+          safeSet(
+            () => setAssistantResponse((previous) => previous + event.text),
+            lifecycleId,
+          );
+
+          return;
+        }
+
+        case "assistant_audio": {
+          /*
+           * ONLY enqueue raw MP3 bytes.
+           *
+           * No Audio().
+           * No Blob URL per chunk.
+           * No waiting for previous chunk.
+           */
+
+          enqueueAssistantAudio(event);
+
+          return;
+        }
+
+        case "assistant_completed": {
+          if (event.turn_id !== activeAssistantTurnIdRef.current) {
+            return;
+          }
+
+          /*
+           * IMPORTANT:
+           *
+           * This means backend generation is
+           * finished.
+           *
+           * It does NOT mean playback is finished.
+           */
+
+          assistantGeneratingRef.current = false;
+
+          audioStreamCompletedRef.current = true;
+
+          safeSet(() => {
+            setIsProcessing(false);
+            setAssistantStatus("");
+          }, lifecycleId);
+
+          console.info("[Voice] Assistant generation completed", {
+            turnId: event.turn_id,
+
+            queuedAudio: audioChunkQueueRef.current.length,
+
+            appending: audioAppendingRef.current,
+          });
+
+          /*
+           * If all chunks have already been
+           * appended, close MediaSource.
+           *
+           * Otherwise appendNextAudioChunk()
+           * will eventually call finishAudioStream().
+           */
+
+          finishAudioStream();
+
+          return;
+        }
+
+        case "interrupted": {
+          stopAssistantPlayback(false);
+
+          activeAssistantTurnIdRef.current = null;
+
+          safeSet(() => {
+            setAssistantResponse("");
+
+            setAssistantStatus("");
+
+            setIsProcessing(false);
+
+            setIsAssistantSpeaking(false);
+
+            setIsListening(true);
+          }, lifecycleId);
+
+          resumeMicrophone();
+
+          return;
+        }
+
+        case "pong": {
+          console.info("[Voice] pong");
+
+          return;
+        }
+
+        case "error": {
+          const message = event.message || event.data || "Voice backend error.";
+
+          console.error("[Voice] backend error", {
+            message,
+            code: event.code,
+          });
+
+          safeSet(() => {
+            setError(message);
+            setIsProcessing(false);
+          }, lifecycleId);
+
+          return;
+        }
+
+        case "session_ended": {
+          cleanup();
+
+          return;
+        }
+
+        default: {
+          const exhaustive: never = event;
+
+          console.warn("[Voice] Unknown event:", exhaustive);
+        }
+      }
+    },
+    [
+      cleanup,
+      enqueueAssistantAudio,
+      finishAudioStream,
+      pauseMicrophone,
+      resumeMicrophone,
+      safeSet,
+      startMicrophone,
+      stopAssistantPlayback,
+    ],
+  );
 
   /*
    * ============================================================
@@ -1713,259 +1310,179 @@ export default function VoiceMode({
    * ============================================================
    */
 
-  const connectWebSocket =
-    useCallback(async () => {
-      if (
-        !mountedRef.current ||
-        connectingRef.current
-      ) {
-        return;
-      }
+  const connectWebSocket = useCallback(async () => {
+    if (!mountedRef.current || connectingRef.current) {
+      return;
+    }
 
-      const lifecycleId =
-        lifecycleIdRef.current;
+    const lifecycleId = lifecycleIdRef.current;
 
-      let id: string;
-      let url: string;
+    let id: string;
+    let url: string;
+
+    try {
+      id = getSessionId();
+      url = getWebSocketUrl();
+    } catch (err) {
+      safeSet(
+        () =>
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Could not initialize voice mode.",
+          ),
+        lifecycleId,
+      );
+
+      return;
+    }
+
+    const existing = websocketRef.current;
+
+    if (
+      existing &&
+      (existing.readyState === WebSocket.OPEN ||
+        existing.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
+    connectingRef.current = true;
+
+    console.info("[Voice] Connecting", {
+      sessionId: id,
+      url,
+    });
+
+    await new Promise<void>((resolve) => {
+      let settled = false;
+
+      const resolveOnce = () => {
+        if (!settled) {
+          settled = true;
+          resolve();
+        }
+      };
+
+      let ws: WebSocket;
 
       try {
-        id = getSessionId();
-        url = getWebSocketUrl();
+        ws = new WebSocket(url);
       } catch (err) {
+        connectingRef.current = false;
+
         safeSet(
           () =>
             setError(
               err instanceof Error
                 ? err.message
-                : "Could not initialize voice mode.",
+                : "Failed to create voice WebSocket.",
             ),
           lifecycleId,
         );
 
+        resolveOnce();
+
         return;
       }
 
-      const existing =
-        websocketRef.current;
+      websocketRef.current = ws;
 
-      if (
-        existing &&
-        (existing.readyState ===
-          WebSocket.OPEN ||
-          existing.readyState ===
-            WebSocket.CONNECTING)
-      ) {
-        return;
-      }
-
-      connectingRef.current = true;
-
-      console.info(
-        "[Voice] Connecting",
-        {
-          sessionId: id,
-          url,
-        },
-      );
-
-      await new Promise<void>(
-        (resolve) => {
-          let settled = false;
-
-          const resolveOnce = () => {
-            if (!settled) {
-              settled = true;
-              resolve();
-            }
-          };
-
-          let ws: WebSocket;
-
+      ws.onopen = () => {
+        if (!mountedRef.current || lifecycleId !== lifecycleIdRef.current) {
           try {
-            ws = new WebSocket(url);
-          } catch (err) {
-            connectingRef.current =
-              false;
-
-            safeSet(
-              () =>
-                setError(
-                  err instanceof Error
-                    ? err.message
-                    : "Failed to create voice WebSocket.",
-                ),
-              lifecycleId,
-            );
-
-            resolveOnce();
-
-            return;
+            ws.close();
+          } catch {
+            // cleanup
           }
 
-          websocketRef.current = ws;
+          resolveOnce();
 
-          ws.onopen = () => {
-            if (
-              !mountedRef.current ||
-              lifecycleId !==
-                lifecycleIdRef.current
-            ) {
-              try {
-                ws.close();
-              } catch {
-                // cleanup
-              }
+          return;
+        }
 
-              resolveOnce();
+        connectingRef.current = false;
 
-              return;
-            }
+        safeSet(() => {
+          setIsConnected(true);
+          setError(null);
+        }, lifecycleId);
 
-            connectingRef.current =
-              false;
+        const message = JSON.stringify({
+          type: "start_session",
+        });
 
-            safeSet(
-              () => {
-                setIsConnected(true);
-                setError(null);
-              },
-              lifecycleId,
-            );
+        console.info("[Voice] ->", message);
 
-            const message =
-              JSON.stringify({
-                type: "start_session",
-              });
+        ws.send(message);
 
-            console.info(
-              "[Voice] ->",
-              message,
-            );
+        resolveOnce();
+      };
 
-            ws.send(message);
+      ws.onmessage = (message: MessageEvent) => {
+        if (!mountedRef.current || lifecycleId !== lifecycleIdRef.current) {
+          return;
+        }
 
-            resolveOnce();
-          };
+        if (typeof message.data !== "string") {
+          console.warn("[Voice] Unexpected binary WebSocket message");
 
-          ws.onmessage = (
-            message: MessageEvent,
-          ) => {
-            if (
-              !mountedRef.current ||
-              lifecycleId !==
-                lifecycleIdRef.current
-            ) {
-              return;
-            }
+          return;
+        }
 
-            if (
-              typeof message.data !==
-              "string"
-            ) {
-              console.warn(
-                "[Voice] Unexpected binary WebSocket message",
-              );
+        try {
+          const parsed = JSON.parse(message.data) as VoiceEvent;
 
-              return;
-            }
+          handleWebSocketEvent(parsed, lifecycleId);
+        } catch (err) {
+          console.error("[Voice] Invalid WebSocket JSON", {
+            err,
+            data: message.data,
+          });
+        }
+      };
 
-            try {
-              const parsed =
-                JSON.parse(
-                  message.data,
-                ) as VoiceEvent;
+      ws.onerror = (event) => {
+        console.error("[Voice] WebSocket error", event);
 
-              handleWebSocketEvent(
-                parsed,
-                lifecycleId,
-              );
-            } catch (err) {
-              console.error(
-                "[Voice] Invalid WebSocket JSON",
-                {
-                  err,
-                  data: message.data,
-                },
-              );
-            }
-          };
+        connectingRef.current = false;
 
-          ws.onerror = (event) => {
-            console.error(
-              "[Voice] WebSocket error",
-              event,
-            );
+        if (websocketRef.current === ws) {
+          safeSet(() => {
+            setIsConnected(false);
 
-            connectingRef.current =
-              false;
+            setError("Voice WebSocket connection failed.");
+          }, lifecycleId);
+        }
 
-            if (
-              websocketRef.current ===
-              ws
-            ) {
-              safeSet(
-                () => {
-                  setIsConnected(
-                    false,
-                  );
+        resolveOnce();
+      };
 
-                  setError(
-                    "Voice WebSocket connection failed.",
-                  );
-                },
-                lifecycleId,
-              );
-            }
+      ws.onclose = (event) => {
+        connectingRef.current = false;
 
-            resolveOnce();
-          };
+        console.info("[Voice] WebSocket closed", {
+          code: event.code,
+          reason: event.reason,
+          sessionId: id,
+        });
 
-          ws.onclose = (event) => {
-            connectingRef.current =
-              false;
+        if (websocketRef.current === ws) {
+          websocketRef.current = null;
 
-            console.info(
-              "[Voice] WebSocket closed",
-              {
-                code: event.code,
-                reason: event.reason,
-                sessionId: id,
-              },
-            );
+          sessionStartedRef.current = false;
 
-            if (
-              websocketRef.current ===
-              ws
-            ) {
-              websocketRef.current =
-                null;
+          if (mountedRef.current && lifecycleId === lifecycleIdRef.current) {
+            setIsConnected(false);
+            setIsMicrophoneReady(false);
+            setIsListening(false);
+          }
+        }
 
-              sessionStartedRef.current =
-                false;
-
-              if (
-                mountedRef.current &&
-                lifecycleId ===
-                  lifecycleIdRef.current
-              ) {
-                setIsConnected(false);
-                setIsMicrophoneReady(
-                  false,
-                );
-                setIsListening(false);
-              }
-            }
-
-            resolveOnce();
-          };
-        },
-      );
-    }, [
-      getSessionId,
-      getWebSocketUrl,
-      handleWebSocketEvent,
-      safeSet,
-    ]);
+        resolveOnce();
+      };
+    });
+  }, [getSessionId, getWebSocketUrl, handleWebSocketEvent, safeSet]);
 
   /*
    * ============================================================
@@ -1973,30 +1490,23 @@ export default function VoiceMode({
    * ============================================================
    */
 
-  const handleClose =
-    useCallback(() => {
-      cleanup();
+  const handleClose = useCallback(() => {
+    cleanup();
 
-      onClose();
-    }, [cleanup, onClose]);
+    onClose();
+  }, [cleanup, onClose]);
 
-  const handleSendTranscript =
-    useCallback(() => {
-      const text =
-        transcript.trim();
+  const handleSendTranscript = useCallback(() => {
+    const text = transcript.trim();
 
-      if (!text) {
-        return;
-      }
+    if (!text) {
+      return;
+    }
 
-      onTranscript(text);
+    onTranscript(text);
 
-      handleClose();
-    }, [
-      handleClose,
-      onTranscript,
-      transcript,
-    ]);
+    handleClose();
+  }, [handleClose, onTranscript, transcript]);
 
   /*
    * ============================================================
@@ -2009,12 +1519,9 @@ export default function VoiceMode({
 
     lifecycleIdRef.current += 1;
 
-    console.info(
-      "[Voice] VoiceMode mounted",
-      {
-        sessionId,
-      },
-    );
+    console.info("[Voice] VoiceMode mounted", {
+      sessionId,
+    });
 
     void connectWebSocket();
 
@@ -2023,38 +1530,26 @@ export default function VoiceMode({
 
       cleanup();
     };
-  }, [
-    cleanup,
-    connectWebSocket,
-    sessionId,
-  ]);
+  }, [cleanup, connectWebSocket, sessionId]);
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#0e1117] text-white">
       <div className="flex items-center justify-between border-b border-[#30363d] px-5 py-4">
         <div>
-          <h1 className="text-lg font-semibold">
-            Voice Mode
-          </h1>
+          <h1 className="text-lg font-semibold">Voice Mode</h1>
 
-          <p className="text-xs text-gray-500">
-            DocTubeAI
-          </p>
+          <p className="text-xs text-gray-500">DocTubeAI</p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <span
               className={`h-2 w-2 rounded-full ${
-                isConnected
-                  ? "bg-green-500"
-                  : "bg-gray-600"
+                isConnected ? "bg-green-500" : "bg-gray-600"
               }`}
             />
 
-            {isConnected
-              ? "Connected"
-              : "Disconnected"}
+            {isConnected ? "Connected" : "Disconnected"}
           </div>
 
           <button
@@ -2071,10 +1566,7 @@ export default function VoiceMode({
       <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-8">
         <div
           className={`relative flex h-32 w-32 items-center justify-center rounded-full bg-blue-600 shadow-[0_0_80px_rgba(37,99,235,0.35)] ${
-            isListening ||
-            isAssistantSpeaking
-              ? "animate-pulse"
-              : ""
+            isListening || isAssistantSpeaking ? "animate-pulse" : ""
           }`}
         >
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-500 text-3xl">
@@ -2099,18 +1591,14 @@ export default function VoiceMode({
           </h2>
 
           {error && (
-            <p className="mt-3 max-w-md text-sm text-red-400">
-              {error}
-            </p>
+            <p className="mt-3 max-w-md text-sm text-red-400">{error}</p>
           )}
         </div>
 
         <div className="mt-8 min-h-[160px] max-h-[300px] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[#30363d] bg-[#161b22] px-6 py-5">
           {liveTranscript ? (
             <div>
-              <p className="mb-3 text-xs text-gray-500">
-                Live transcription
-              </p>
+              <p className="mb-3 text-xs text-gray-500">Live transcription</p>
 
               <p className="whitespace-pre-wrap text-lg leading-relaxed text-gray-200">
                 {liveTranscript}
@@ -2145,9 +1633,7 @@ export default function VoiceMode({
 
         {assistantResponse && (
           <div className="mt-5 w-full max-w-2xl rounded-2xl border border-[#30363d] bg-[#161b22] px-6 py-5">
-            <p className="mb-3 text-xs text-gray-500">
-              DocTubeAI
-            </p>
+            <p className="mb-3 text-xs text-gray-500">DocTubeAI</p>
 
             <p className="whitespace-pre-wrap text-lg leading-relaxed text-gray-200">
               {assistantResponse}
@@ -2160,9 +1646,7 @@ export default function VoiceMode({
         <div className="flex items-center gap-3 text-sm text-gray-500">
           <span
             className={`h-3 w-3 rounded-full ${
-              isMicrophoneReady
-                ? "animate-pulse bg-green-500"
-                : "bg-gray-600"
+              isMicrophoneReady ? "animate-pulse bg-green-500" : "bg-gray-600"
             }`}
           />
 
@@ -2173,17 +1657,15 @@ export default function VoiceMode({
             : "Microphone inactive"}
         </div>
 
-        {transcript &&
-          !isProcessing &&
-          !isAssistantSpeaking && (
-            <button
-              type="button"
-              onClick={handleSendTranscript}
-              className="rounded-xl bg-blue-600 px-6 py-3 font-medium transition hover:bg-blue-700"
-            >
-              Use this transcript ↑
-            </button>
-          )}
+        {transcript && !isProcessing && !isAssistantSpeaking && (
+          <button
+            type="button"
+            onClick={handleSendTranscript}
+            className="rounded-xl bg-blue-600 px-6 py-3 font-medium transition hover:bg-blue-700"
+          >
+            Use this transcript ↑
+          </button>
+        )}
       </div>
     </div>
   );

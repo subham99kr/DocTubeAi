@@ -1,14 +1,14 @@
+import asyncio
 import json
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-import asyncio
 
-from modules.ask_query import ask_with_graph, ask_with_graph_stream
-from modules.verify_session import verify_and_initialize_session 
 from auth.dependencies import get_current_user_optional
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from modules.ask_query import ask_with_graph, ask_with_graph_stream
+from modules.verify_session import verify_and_initialize_session
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chats", tags=["Chats"])

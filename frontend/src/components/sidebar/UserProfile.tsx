@@ -5,16 +5,9 @@ import { useAuth } from "../../context/AuthContext";
 import LoginButton from "../auth/LoginButton";
 
 export default function UserProfile() {
-  const {
-    user,
-    logout,
-    loading,
-  } = useAuth();
+  const { user, logout, loading } = useAuth();
 
-  const [
-    logoutLoading,
-    setLogoutLoading,
-  ] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   function handleLogout() {
     setLogoutLoading(true);
@@ -27,10 +20,7 @@ export default function UserProfile() {
   }
 
   // AUTH / LOGOUT LOADING
-  if (
-    loading ||
-    logoutLoading
-  ) {
+  if (loading || logoutLoading) {
     return (
       <div className="bg-[#1a1d24] border border-[#30363d] rounded-2xl p-4 animate-pulse">
         <div className="flex items-center gap-3">
@@ -48,13 +38,9 @@ export default function UserProfile() {
     );
   }
 
-  const urlParams =
-    new URLSearchParams(
-      window.location.search
-    );
+  const urlParams = new URLSearchParams(window.location.search);
 
-  const hasOAuthCode =
-    urlParams.has("code");
+  const hasOAuthCode = urlParams.has("code");
 
   // During OAuth redirect,
   // don't show login button
@@ -91,13 +77,9 @@ export default function UserProfile() {
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">
-            {user.name}
-          </p>
+          <p className="font-medium truncate">{user.name}</p>
 
-          <p className="text-xs text-gray-400 truncate">
-            {user.email}
-          </p>
+          <p className="text-xs text-gray-400 truncate">{user.email}</p>
         </div>
       </div>
 

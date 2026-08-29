@@ -2,9 +2,7 @@ type Props = {
   status?: string;
 };
 
-export default function TypingStatus({
-  status,
-}: Props) {
+export default function TypingStatus({ status }: Props) {
   if (!status) return null;
 
   return (

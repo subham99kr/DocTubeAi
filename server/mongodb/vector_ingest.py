@@ -1,9 +1,10 @@
-from typing import List, Optional, Dict, Any
-from dotenv import load_dotenv
 import logging
-from mongodb.insert_chunks import insert_chunks
-from modules.pdf_handlers import delete_local_files, delete_session_directory
+from typing import Any, Dict, List, Optional
+
+from dotenv import load_dotenv
 from modules.load_and_split_with_ocr import load_and_split_with_ocr
+from modules.pdf_handlers import delete_local_files, delete_session_directory
+from mongodb.insert_chunks import insert_chunks
 
 load_dotenv()
 logger = logging.getLogger(__name__)

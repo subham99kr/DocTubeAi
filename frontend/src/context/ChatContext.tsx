@@ -1,13 +1,8 @@
-import {
-  createContext,
-  useContext,
-  useState,
-} from "react";
+import { createContext, useContext, useState } from "react";
 
 import type { ReactNode } from "react";
 
-import type { Message }
-from "../types/chat.types";
+import type { Message } from "../types/chat.types";
 
 export type Session = {
   session_id: string;
@@ -17,51 +12,34 @@ export type Session = {
 type ChatContextType = {
   messages: Message[];
 
-  setMessages: React.Dispatch<
-    React.SetStateAction<Message[]>
-  >;
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 
   sessionId: string;
 
-  setSessionId: React.Dispatch<
-    React.SetStateAction<string>
-  >;
+  setSessionId: React.Dispatch<React.SetStateAction<string>>;
 
   loading: boolean;
 
-  setLoading: React.Dispatch<
-    React.SetStateAction<boolean>
-  >;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 
   uploadedPdfs: string[];
 
-  setUploadedPdfs: React.Dispatch<
-    React.SetStateAction<string[]>
-  >;
+  setUploadedPdfs: React.Dispatch<React.SetStateAction<string[]>>;
 
   urls: string[];
 
-  setUrls: React.Dispatch<
-    React.SetStateAction<string[]>
-  >;
+  setUrls: React.Dispatch<React.SetStateAction<string[]>>;
 
   sessions: Session[];
 
-  setSessions: React.Dispatch<
-    React.SetStateAction<Session[]>
-  >;
+  setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
 
   status: string;
 
-  setStatus: React.Dispatch<
-    React.SetStateAction<string>
-  >;
+  setStatus: React.Dispatch<React.SetStateAction<string>>;
 };
 
-const ChatContext =
-  createContext<ChatContextType | null>(
-    null
-  );
+const ChatContext = createContext<ChatContextType | null>(null);
 
 type Props = {
   children: ReactNode;
@@ -71,47 +49,33 @@ function generateSessionId(): string {
   return crypto.randomUUID();
 }
 
-export function ChatProvider({
-  children,
-}: Props) {
-
+export function ChatProvider({ children }: Props) {
   /*
    * Generate the initial session only once
    * when the provider is created.
    */
-  const [sessionId, setSessionId] =
-    useState<string>(() =>
-      generateSessionId()
-    );
+  const [sessionId, setSessionId] = useState<string>(() => generateSessionId());
 
-  const [messages, setMessages] =
-    useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [
-    uploadedPdfs,
-    setUploadedPdfs,
-  ] = useState<string[]>([]);
+  const [uploadedPdfs, setUploadedPdfs] = useState<string[]>([]);
 
-  const [urls, setUrls] =
-    useState<string[]>([]);
+  const [urls, setUrls] = useState<string[]>([]);
 
   /*
    * Session list starts with the
    * temporary "New Chat".
    */
-  const [sessions, setSessions] =
-    useState<Session[]>(() => [
-      {
-        session_id: sessionId,
-        title: "New Chat",
-      },
-    ]);
+  const [sessions, setSessions] = useState<Session[]>(() => [
+    {
+      session_id: sessionId,
+      title: "New Chat",
+    },
+  ]);
 
-  const [status, setStatus] =
-    useState("");
+  const [status, setStatus] = useState("");
 
   return (
     <ChatContext.Provider
@@ -144,13 +108,10 @@ export function ChatProvider({
 }
 
 export function useChat() {
-  const context =
-    useContext(ChatContext);
+  const context = useContext(ChatContext);
 
   if (!context) {
-    throw new Error(
-      "useChat must be used inside ChatProvider"
-    );
+    throw new Error("useChat must be used inside ChatProvider");
   }
 
   return context;

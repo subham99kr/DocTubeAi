@@ -1,9 +1,10 @@
 import logging
-from fastapi import APIRouter, Depends
 from typing import List, Optional
-from pydantic import BaseModel
-from global_modules.pg_pool import get_pg_pool
+
 from auth.dependencies import get_current_user_optional
+from fastapi import APIRouter, Depends
+from global_modules.pg_pool import get_pg_pool
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Home"])

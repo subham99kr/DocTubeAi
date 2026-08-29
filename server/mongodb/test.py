@@ -1,8 +1,9 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
 import os
 import traceback
+
+from dotenv import load_dotenv
+from pymongo import MongoClient
+from sentence_transformers import SentenceTransformer
 
 # ============================================================
 # CONFIG

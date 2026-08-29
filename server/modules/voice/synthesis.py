@@ -34,7 +34,6 @@ from typing import AsyncIterator, Optional
 
 import edge_tts
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -67,6 +66,7 @@ DEFAULT_PITCH = os.getenv(
 # Result
 # ============================================================
 
+
 @dataclass(slots=True)
 class SynthesisResult:
     """
@@ -90,6 +90,7 @@ class SynthesisResult:
 # ============================================================
 # Synthesizer
 # ============================================================
+
 
 class SpeechSynthesizer:
     """
@@ -143,9 +144,7 @@ class SpeechSynthesizer:
         # VoicePipeline uses this for interruption.
         # ----------------------------------------------------
 
-        self._synthesis_task: Optional[
-            asyncio.Task
-        ] = None
+        self._synthesis_task: Optional[asyncio.Task] = None
 
     # ========================================================
     # Properties
@@ -172,12 +171,8 @@ class SpeechSynthesizer:
         """
 
         async with self._lock:
-
             if self._closed:
-
-                raise RuntimeError(
-                    "Cannot start a closed synthesizer."
-                )
+                raise RuntimeError("Cannot start a closed synthesizer.")
 
             if self._started:
                 return
@@ -185,8 +180,7 @@ class SpeechSynthesizer:
             self._started = True
 
             logger.info(
-                "🔊 Speech synthesizer started "
-                "voice=%s rate=%s volume=%s pitch=%s",
+                "🔊 Speech synthesizer started voice=%s rate=%s volume=%s pitch=%s",
                 self.voice,
                 self.rate,
                 self.volume,
@@ -218,25 +212,18 @@ class SpeechSynthesizer:
         if task.done():
             return
 
-        logger.info(
-            "🛑 Cancelling speech synthesis."
-        )
+        logger.info("🛑 Cancelling speech synthesis.")
 
         task.cancel()
 
         try:
-
             await task
 
         except asyncio.CancelledError:
-
             pass
 
         except Exception:
-
-            logger.exception(
-                "Error while cancelling speech synthesis."
-            )
+            logger.exception("Error while cancelling speech synthesis.")
 
     # ========================================================
     # Close
@@ -252,16 +239,13 @@ class SpeechSynthesizer:
         await self.cancel()
 
         async with self._lock:
-
             if self._closed:
                 return
 
             self._closed = True
             self._started = False
 
-            logger.info(
-                "🔌 Speech synthesizer closed."
-            )
+            logger.info("🔌 Speech synthesizer closed.")
 
     # ========================================================
     # Complete synthesis
@@ -282,16 +266,10 @@ class SpeechSynthesizer:
         """
 
         if self._closed:
-
-            raise RuntimeError(
-                "Cannot synthesize with a closed synthesizer."
-            )
+            raise RuntimeError("Cannot synthesize with a closed synthesizer.")
 
         if not self._started:
-
-            raise RuntimeError(
-                "Synthesizer has not been started."
-            )
+            raise RuntimeError("Synthesizer has not been started.")
 
         text = self._normalize_text(text)
 
@@ -301,35 +279,24 @@ class SpeechSynthesizer:
         await self.cancel()
 
         logger.debug(
-            "Starting complete speech synthesis "
-            "text_length=%d",
+            "Starting complete speech synthesis text_length=%d",
             len(text),
         )
 
-        task = asyncio.create_task(
-            self._synthesize_edge_tts(
-                text
-            )
-        )
+        task = asyncio.create_task(self._synthesize_edge_tts(text))
 
         self._synthesis_task = task
 
         try:
-
             return await task
 
         except asyncio.CancelledError:
-
-            logger.debug(
-                "Speech synthesis task cancelled."
-            )
+            logger.debug("Speech synthesis task cancelled.")
 
             raise
 
         finally:
-
             if self._synthesis_task is task:
-
                 self._synthesis_task = None
 
     # ========================================================
@@ -344,14 +311,11 @@ class SpeechSynthesizer:
         Generate a complete MP3 using Edge TTS.
         """
 
-        fd, path = tempfile.mkstemp(
-            suffix=".mp3"
-        )
+        fd, path = tempfile.mkstemp(suffix=".mp3")
 
         os.close(fd)
 
         try:
-
             communicate = edge_tts.Communicate(
                 text=text,
                 voice=self.voice,
@@ -370,14 +334,10 @@ class SpeechSynthesizer:
             )
 
             if not audio:
-
-                raise RuntimeError(
-                    "TTS returned empty audio."
-                )
+                raise RuntimeError("TTS returned empty audio.")
 
             logger.debug(
-                "Speech synthesis completed "
-                "bytes=%d",
+                "Speech synthesis completed bytes=%d",
                 len(audio),
             )
 
@@ -388,28 +348,20 @@ class SpeechSynthesizer:
             )
 
         except asyncio.CancelledError:
-
-            logger.debug(
-                "Speech synthesis cancelled."
-            )
+            logger.debug("Speech synthesis cancelled.")
 
             raise
 
         except Exception:
-
-            logger.exception(
-                "❌ Speech synthesis failed."
-            )
+            logger.exception("❌ Speech synthesis failed.")
 
             raise
 
         finally:
-
             with contextlib.suppress(
                 FileNotFoundError,
                 OSError,
             ):
-
                 os.remove(path)
 
     # ========================================================
@@ -438,16 +390,10 @@ class SpeechSynthesizer:
         """
 
         if self._closed:
-
-            raise RuntimeError(
-                "Cannot synthesize with a closed synthesizer."
-            )
+            raise RuntimeError("Cannot synthesize with a closed synthesizer.")
 
         if not self._started:
-
-            raise RuntimeError(
-                "Synthesizer has not been started."
-            )
+            raise RuntimeError("Synthesizer has not been started.")
 
         text = self._normalize_text(text)
 
@@ -461,8 +407,7 @@ class SpeechSynthesizer:
         await self.cancel()
 
         logger.debug(
-            "Starting streaming speech synthesis "
-            "text_length=%d",
+            "Starting streaming speech synthesis text_length=%d",
             len(text),
         )
 
@@ -471,9 +416,7 @@ class SpeechSynthesizer:
         # task so interrupt_assistant() can cancel it.
         # ----------------------------------------------------
 
-        queue: asyncio.Queue[
-            Optional[bytes]
-        ] = asyncio.Queue()
+        queue: asyncio.Queue[Optional[bytes]] = asyncio.Queue()
 
         async def producer() -> None:
 
@@ -486,55 +429,37 @@ class SpeechSynthesizer:
             )
 
             try:
-
                 async for chunk in communicate.stream():
-
                     await asyncio.sleep(0)
 
-                    if (
-                        chunk.get("type")
-                        != "audio"
-                    ):
+                    if chunk.get("type") != "audio":
                         continue
 
-                    audio = chunk.get(
-                        "data"
-                    )
+                    audio = chunk.get("data")
 
                     if not audio:
                         continue
 
-                    await queue.put(
-                        audio
-                    )
+                    await queue.put(audio)
 
             except asyncio.CancelledError:
-
-                logger.debug(
-                    "Streaming speech synthesis "
-                    "producer cancelled."
-                )
+                logger.debug("Streaming speech synthesis producer cancelled.")
 
                 raise
 
             finally:
-
                 # ------------------------------------------------
                 # None means the producer has finished.
                 # ------------------------------------------------
 
                 await queue.put(None)
 
-        task = asyncio.create_task(
-            producer()
-        )
+        task = asyncio.create_task(producer())
 
         self._synthesis_task = task
 
         try:
-
             while True:
-
                 audio = await queue.get()
 
                 if audio is None:
@@ -543,10 +468,7 @@ class SpeechSynthesizer:
                 yield audio
 
         except asyncio.CancelledError:
-
-            logger.debug(
-                "Streaming speech synthesis cancelled."
-            )
+            logger.debug("Streaming speech synthesis cancelled.")
 
             task.cancel()
 
@@ -558,20 +480,17 @@ class SpeechSynthesizer:
             raise
 
         finally:
-
             # ------------------------------------------------
             # If the stream ended normally, wait for producer.
             # ------------------------------------------------
 
             if not task.done():
-
                 await asyncio.gather(
                     task,
                     return_exceptions=True,
                 )
 
             if self._synthesis_task is task:
-
                 self._synthesis_task = None
 
     # ========================================================
@@ -594,9 +513,7 @@ class SpeechSynthesizer:
         if not text:
             return ""
 
-        text = " ".join(
-            text.split()
-        )
+        text = " ".join(text.split())
 
         return text
 
@@ -613,13 +530,13 @@ class SpeechSynthesizer:
             path,
             "rb",
         ) as file:
-
             return file.read()
 
 
 # ============================================================
 # Factory
 # ============================================================
+
 
 def speech_synthesizer(
     voice: str = DEFAULT_VOICE,

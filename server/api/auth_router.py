@@ -1,9 +1,10 @@
 import os
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
-from global_modules.pg_pool import get_pg_pool
+
 from auth.security import create_secure_jwt
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse, RedirectResponse
 from global_modules.http_client import get_http_client
+from global_modules.pg_pool import get_pg_pool
 from logger import logger
 
 router = APIRouter(tags=["Auth"])
@@ -11,6 +12,7 @@ router = APIRouter(tags=["Auth"])
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+
 
 @router.get("/login/google")
 async def login_google():
@@ -23,6 +25,7 @@ async def login_google():
         f"access_type=offline&prompt=consent"
     )
     return RedirectResponse(url=url)
+
 
 @router.get("/auth/callback")
 async def auth_callback(code: str):
@@ -39,7 +42,7 @@ async def auth_callback(code: str):
                 "redirect_uri": GOOGLE_REDIRECT_URI,
                 "grant_type": "authorization_code",
             },
-            timeout=10
+            timeout=10,
         )
         token_res.raise_for_status()
         google_tokens = token_res.json()
@@ -48,13 +51,13 @@ async def auth_callback(code: str):
         user_info_res = await client.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
             headers={"Authorization": f"Bearer {google_tokens['access_token']}"},
-            timeout=10
+            timeout=10,
         )
         user_info_res.raise_for_status()
         user_data = user_info_res.json()
-        
+
         # 3. Extract relevant data
-        oauth_id = user_data.get("sub")  
+        oauth_id = user_data.get("sub")
         email = user_data.get("email")
         name = user_data.get("name")
 
@@ -69,19 +72,21 @@ async def auth_callback(code: str):
         access_token = create_secure_jwt(oauth_id)
 
         # 6. Return the Secure Token to your Frontend
-        return JSONResponse(content={
-            "status": "success",
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": {
-                "email": email,
-                "name": name
+        return JSONResponse(
+            content={
+                "status": "success",
+                "access_token": access_token,
+                "token_type": "bearer",
+                "user": {"email": email, "name": name},
             }
-        })
+        )
 
     except Exception as e:
         logger.exception(f"🔴 Auth Callback failed: {e}")
-        raise HTTPException(status_code=400, detail="Authentication failed. Please try again.")
+        raise HTTPException(
+            status_code=400, detail="Authentication failed. Please try again."
+        )
+
 
 async def upsert_user(oauth_id: str, email: str, name: str):
     """Ensures the user exists in our DB and updates their name if changed."""

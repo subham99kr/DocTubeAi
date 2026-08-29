@@ -1,5 +1,7 @@
-import streamlit as st
 import json
+
+import streamlit as st
+
 
 def store_token(token: str):
     st.session_state["access_token"] = token

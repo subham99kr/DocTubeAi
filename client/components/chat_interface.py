@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def render_chat_window():
     """Renders a scrollable chat window with aligned messages and rounded bubbles."""
 

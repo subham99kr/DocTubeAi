@@ -11,17 +11,11 @@ import { useAuth } from "../context/AuthContext";
 import { askChat } from "../api/chatApi";
 
 export default function ChatPage() {
-  const {
-    setMessages,
-    sessionId,
-    loading,
-    setLoading,
-  } = useChat();
+  const { setMessages, sessionId, loading, setLoading } = useChat();
 
   const { token } = useAuth();
 
-  const [streamingMessage, setStreamingMessage] =
-    useState("");
+  const [streamingMessage, setStreamingMessage] = useState("");
 
   async function handleSend(message: string) {
     setLoading(true);
@@ -74,9 +68,7 @@ export default function ChatPage() {
   return (
     <div className="h-screen bg-[#0e1117] text-white flex flex-col">
       <div className="border-b border-[#30363d] p-4">
-        <h1 className="text-xl font-bold">
-          DocTubeAI
-        </h1>
+        <h1 className="text-xl font-bold">DocTubeAI</h1>
       </div>
 
       <div className="flex-1 overflow-hidden">
@@ -91,10 +83,7 @@ export default function ChatPage() {
         )}
       </div>
 
-      <ChatInput
-        onSend={handleSend}
-        disabled={loading}
-      />
+      <ChatInput onSend={handleSend} disabled={loading} />
     </div>
   );
 }

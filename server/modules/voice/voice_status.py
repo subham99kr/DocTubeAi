@@ -77,10 +77,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-
 # ============================================================
 # VOICE STATUS MANAGER
 # ============================================================
+
 
 @dataclass(slots=True)
 class VoiceStatusManager:
@@ -115,9 +115,7 @@ class VoiceStatusManager:
     # assistant turn.
     # --------------------------------------------------------
 
-    announced: set[str] = field(
-        default_factory=set
-    )
+    announced: set[str] = field(default_factory=set)
 
     # ========================================================
     # RESET
@@ -187,12 +185,9 @@ class VoiceStatusManager:
         # ====================================================
 
         if node_name == "vector_search":
-
             return self._once(
                 key="documents",
-                message=(
-                    "I'm checking your documents."
-                ),
+                message=("I'm checking your documents."),
             )
 
         # ====================================================
@@ -200,12 +195,9 @@ class VoiceStatusManager:
         # ====================================================
 
         if node_name == "internet_search":
-
             return self._once(
                 key="web_search",
-                message=(
-                    "I'm checking the web for more information."
-                ),
+                message=("I'm checking the web for more information."),
             )
 
         # ====================================================
@@ -213,12 +205,9 @@ class VoiceStatusManager:
         # ====================================================
 
         if node_name == "web_scraper":
-
             return self._once(
                 key="web_pages",
-                message=(
-                    "I'm looking through the relevant information."
-                ),
+                message=("I'm looking through the relevant information."),
             )
 
         # ====================================================
@@ -226,12 +215,9 @@ class VoiceStatusManager:
         # ====================================================
 
         if node_name == "reranker":
-
             return self._once(
                 key="reranking",
-                message=(
-                    "I'm narrowing down the most relevant information."
-                ),
+                message=("I'm narrowing down the most relevant information."),
             )
 
         # ====================================================
@@ -239,12 +225,9 @@ class VoiceStatusManager:
         # ====================================================
 
         if node_name == "retrieval_evaluator":
-
             return self._once(
                 key="verification",
-                message=(
-                    "I'm rechecking the information I found."
-                ),
+                message=("I'm rechecking the information I found."),
             )
 
         # ====================================================

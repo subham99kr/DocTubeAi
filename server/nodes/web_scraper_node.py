@@ -1,9 +1,7 @@
-# web_scraper_node.py
 
 import logging
 
 from state.state import State
-
 from tools.web_scraper import (
     run_web_scrape,
 )
@@ -34,7 +32,6 @@ async def web_scraper_node(
     )
 
     try:
-
         # =================================================
         # URL
         # =================================================
@@ -45,19 +42,15 @@ async def web_scraper_node(
         )
 
         if not url:
+            logger.warning("No URL available for web scraper.")
 
-            logger.warning(
-                "No URL available for "
-                "web scraper."
+            state["tool_outputs"].append(
+                {
+                    "tool": "web_scraper",
+                    "success": False,
+                    "summary": ("No URL provided."),
+                }
             )
-
-            state["tool_outputs"].append({
-                "tool": "web_scraper",
-                "success": False,
-                "summary": (
-                    "No URL provided."
-                ),
-            })
 
             return state
 
@@ -65,37 +58,30 @@ async def web_scraper_node(
         # SCRAPE
         # =================================================
 
-        logger.info(
-            f"🕸️ Scraping URL: {url}"
-        )
+        logger.info(f"🕸️ Scraping URL: {url}")
 
         content = await run_web_scrape(
             url,
             http_client,
         )
 
-        state["used_tools"].append(
-            "web_scraper"
-        )
+        state["used_tools"].append("web_scraper")
 
         # =================================================
         # EMPTY CONTENT
         # =================================================
 
         if not content:
-
-            state["tool_outputs"].append({
-                "tool": "web_scraper",
-                "success": False,
-                "summary": (
-                    "Web scraping returned "
-                    "empty content."
-                ),
-            })
+            state["tool_outputs"].append(
+                {
+                    "tool": "web_scraper",
+                    "success": False,
+                    "summary": ("Web scraping returned empty content."),
+                }
+            )
 
             state["agent_scratchpad"].append(
-                "Web scraping failed to "
-                "retrieve meaningful content."
+                "Web scraping failed to retrieve meaningful content."
             )
 
             return state
@@ -110,50 +96,40 @@ async def web_scraper_node(
             "content": content,
         }
 
-        state["retrieved_chunks"].append(
-            chunk
-        )
+        state["retrieved_chunks"].append(chunk)
 
         # =================================================
         # METADATA
         # =================================================
 
-        state["tool_outputs"].append({
-            "tool": "web_scraper",
-            "success": True,
-            "summary": (
-                "Retrieved webpage content."
-            ),
-        })
-
-        state["agent_scratchpad"].append(
-            f"Successfully scraped: {url}"
+        state["tool_outputs"].append(
+            {
+                "tool": "web_scraper",
+                "success": True,
+                "summary": ("Retrieved webpage content."),
+            }
         )
 
-        state["sources_used"].append(
-            url
-        )
+        state["agent_scratchpad"].append(f"Successfully scraped: {url}")
 
-        logger.info(
-            f"Web scraping successful: {url}"
-        )
+        state["sources_used"].append(url)
+
+        logger.info(f"Web scraping successful: {url}")
 
         return state
 
     except Exception as e:
-
         logger.error(
-            f"❌ Web scraping failed: "
-            f"{str(e)}",
+            f"❌ Web scraping failed: {str(e)}",
             exc_info=True,
         )
 
-        state["tool_outputs"].append({
-            "tool": "web_scraper",
-            "success": False,
-            "summary": (
-                "Web scraping failed."
-            ),
-        })
+        state["tool_outputs"].append(
+            {
+                "tool": "web_scraper",
+                "success": False,
+                "summary": ("Web scraping failed."),
+            }
+        )
 
         return state

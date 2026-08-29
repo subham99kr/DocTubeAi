@@ -1,26 +1,23 @@
 
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from logger import logger
-from global_modules.pg_pool import get_pg_pool,close_pg_pool
 from contextlib import asynccontextmanager
-from api.voice_router import router as voice_router
-from api.voice_ws_router import router as voice_ws_router
 
-
-
-
-
+from api.auth_router import router as auth_router
 
 # routers
 from api.chatting_router import router as chatting_router
-from api.auth_router import router as auth_router
-from api.load_chats_router import router as load_chats_router
 from api.home import router as home_router
+from api.load_chats_router import router as load_chats_router
 from api.load_transcript_router import router as transcripts_router
 from api.upload_router import router as upload_router
+from api.voice_router import router as voice_router
+from api.voice_ws_router import router as voice_ws_router
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from global_modules.pg_pool import close_pg_pool, get_pg_pool
+from logger import logger
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

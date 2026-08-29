@@ -1,6 +1,7 @@
 import streamlit as st
 from api.history_client import load_history
 
+
 def switch_session(new_session_id):
     if new_session_id == st.session_state.get("active_session_id"):
         return

@@ -17,19 +17,14 @@ type StreamParams = {
   query: string;
   token?: string;
 
-  onStatus?: (
-    status: string
-  ) => void;
+  onStatus?: (status: string) => void;
 
-  onToken?: (
-    token: string
-  ) => void;
+  onToken?: (token: string) => void;
 
   onDone?: () => void;
 };
 
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 export async function streamChatResponse({
   sessionId,
@@ -39,40 +34,32 @@ export async function streamChatResponse({
   onToken,
   onDone,
 }: StreamParams) {
-  const response = await fetch(
-    `${BACKEND_URL}/chats/ask/stream`,
-    {
-      method: "POST",
+  const response = await fetch(`${BACKEND_URL}/chats/ask/stream`, {
+    method: "POST",
 
-      headers: {
-        "Content-Type":
-          "application/json",
+    headers: {
+      "Content-Type": "application/json",
 
-        ...(token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : {}),
-      },
+      ...(token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {}),
+    },
 
-      body: JSON.stringify({
-        session_id: sessionId,
-        query,
-      }),
-    }
-  );
+    body: JSON.stringify({
+      session_id: sessionId,
+      query,
+    }),
+  });
 
   if (!response.body) {
-    throw new Error(
-      "No response body"
-    );
+    throw new Error("No response body");
   }
 
-  const reader =
-    response.body.getReader();
+  const reader = response.body.getReader();
 
-  const decoder =
-    new TextDecoder();
+  const decoder = new TextDecoder();
 
   let buffer = "";
 
@@ -80,11 +67,7 @@ export async function streamChatResponse({
   let tokenBuffer = "";
 
   // STREAM FLUSH TIMER
-  let flushTimeout:
-    | ReturnType<
-        typeof setTimeout
-      >
-    | null = null;
+  let flushTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // FLUSH TOKENS SMOOTHLY
   function flushTokens() {
@@ -100,8 +83,7 @@ export async function streamChatResponse({
   }
 
   while (true) {
-    const { done, value } =
-      await reader.read();
+    const { done, value } = await reader.read();
 
     // STREAM ENDED
     if (done) {
@@ -112,86 +94,51 @@ export async function streamChatResponse({
       break;
     }
 
-    buffer += decoder.decode(
-      value,
-      {
-        stream: true,
-      }
-    );
+    buffer += decoder.decode(value, {
+      stream: true,
+    });
 
-    const lines =
-      buffer.split("\n");
+    const lines = buffer.split("\n");
 
     buffer = lines.pop() || "";
 
     for (const line of lines) {
-      if (
-        !line.startsWith(
-          "data: "
-        )
-      ) {
+      if (!line.startsWith("data: ")) {
         continue;
       }
 
       try {
-        const json =
-          JSON.parse(
-            line.replace(
-              "data: ",
-              ""
-            )
-          );
+        const json = JSON.parse(line.replace("data: ", ""));
 
         // IGNORE HEARTBEATS
-        if (
-          json.type ===
-          "heartbeat"
-        ) {
+        if (json.type === "heartbeat") {
           continue;
         }
 
         // STATUS EVENTS
-        if (
-          json.type ===
-          "status"
-        ) {
-          onStatus?.(
-            json.data
-          );
+        if (json.type === "status") {
+          onStatus?.(json.data);
 
           continue;
         }
 
         // TOKEN EVENTS
-        if (
-          json.type ===
-          "token"
-        ) {
-          tokenBuffer +=
-            json.data;
+        if (json.type === "token") {
+          tokenBuffer += json.data;
 
           // already scheduled
-          if (
-            flushTimeout
-          ) {
+          if (flushTimeout) {
             continue;
           }
 
           // BATCH TOKENS
-          flushTimeout =
-            setTimeout(
-              flushTokens,
-              35
-            );
+          flushTimeout = setTimeout(flushTokens, 35);
 
           continue;
         }
 
         // DONE EVENT
-        if (
-          json.type ===
-          "done"
-        ) {
+        if (json.type === "done") {
           flushTokens();
 
           onDone?.();
@@ -199,10 +146,7 @@ export async function streamChatResponse({
           return;
         }
       } catch (error) {
-        console.error(
-          "SSE Parse Error:",
-          error
-        );
+        console.error("SSE Parse Error:", error);
       }
     }
   }

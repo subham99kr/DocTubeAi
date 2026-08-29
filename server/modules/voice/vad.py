@@ -49,7 +49,6 @@ Architecture:
              reset
 """
 
-
 from __future__ import annotations
 
 import logging
@@ -66,7 +65,6 @@ from .config import (
     VAD_PRE_SPEECH_SECONDS,
     VAD_SILENCE_SECONDS,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -194,39 +192,25 @@ class VoiceActivityDetector:
         # ----------------------------------------------------
 
         if sample_rate <= 0:
-            raise ValueError(
-                "sample_rate must be greater than zero."
-            )
+            raise ValueError("sample_rate must be greater than zero.")
 
         if frame_duration_ms <= 0:
-            raise ValueError(
-                "frame_duration_ms must be greater than zero."
-            )
+            raise ValueError("frame_duration_ms must be greater than zero.")
 
         if energy_threshold < 0:
-            raise ValueError(
-                "energy_threshold cannot be negative."
-            )
+            raise ValueError("energy_threshold cannot be negative.")
 
         if min_speech_seconds < 0:
-            raise ValueError(
-                "min_speech_seconds cannot be negative."
-            )
+            raise ValueError("min_speech_seconds cannot be negative.")
 
         if silence_seconds <= 0:
-            raise ValueError(
-                "silence_seconds must be greater than zero."
-            )
+            raise ValueError("silence_seconds must be greater than zero.")
 
         if pre_speech_seconds < 0:
-            raise ValueError(
-                "pre_speech_seconds cannot be negative."
-            )
+            raise ValueError("pre_speech_seconds cannot be negative.")
 
         if post_speech_seconds < 0:
-            raise ValueError(
-                "post_speech_seconds cannot be negative."
-            )
+            raise ValueError("post_speech_seconds cannot be negative.")
 
         self.sample_rate = sample_rate
         self.frame_duration_ms = frame_duration_ms
@@ -376,9 +360,7 @@ class VoiceActivityDetector:
         # theoretically have different sizes.
         # ----------------------------------------------------
 
-        frame_duration = (
-            frame_samples / self.sample_rate
-        )
+        frame_duration = frame_samples / self.sample_rate
 
         self._current_time += frame_duration
 
@@ -390,7 +372,6 @@ class VoiceActivityDetector:
         # ----------------------------------------------------
 
         if self.state.speaking:
-
             return self._process_while_speaking(
                 audio_frame=audio_frame,
                 frame_duration=frame_duration,
@@ -426,7 +407,6 @@ class VoiceActivityDetector:
         # ----------------------------------------------------
 
         if not is_speech:
-
             self.state.candidate_duration = 0.0
 
             self._speech_frames.clear()
@@ -454,10 +434,7 @@ class VoiceActivityDetector:
         # Not enough continuous speech yet.
         # ----------------------------------------------------
 
-        if (
-            self.state.candidate_duration
-            < self.min_speech_seconds
-        ):
+        if self.state.candidate_duration < self.min_speech_seconds:
             return []
 
         # ----------------------------------------------------
@@ -467,17 +444,12 @@ class VoiceActivityDetector:
         self.state.speaking = True
 
         self.state.speech_started_at = (
-            self._current_time
-            - self.state.candidate_duration
+            self._current_time - self.state.candidate_duration
         )
 
-        self.state.last_speech_at = (
-            self._current_time
-        )
+        self.state.last_speech_at = self._current_time
 
-        self.state.speech_duration = (
-            self.state.candidate_duration
-        )
+        self.state.speech_duration = self.state.candidate_duration
 
         self.state.silence_duration = 0.0
 
@@ -489,10 +461,7 @@ class VoiceActivityDetector:
         # spoken word is not lost.
         # ----------------------------------------------------
 
-        self._speech_frames = (
-            list(self._pre_speech_frames)
-            + self._speech_frames
-        )
+        self._speech_frames = list(self._pre_speech_frames) + self._speech_frames
 
         self._clear_pre_speech_buffer()
         self._clear_post_speech_buffer()
@@ -533,20 +502,13 @@ class VoiceActivityDetector:
         # ----------------------------------------------------
 
         if is_speech:
+            self.state.last_speech_at = self._current_time
 
-            self.state.last_speech_at = (
-                self._current_time
-            )
-
-            self.state.speech_duration += (
-                frame_duration
-            )
+            self.state.speech_duration += frame_duration
 
             self.state.silence_duration = 0.0
 
-            self._speech_frames.append(
-                audio_frame
-            )
+            self._speech_frames.append(audio_frame)
 
             # Any previous trailing silence is no longer
             # trailing silence because speech resumed.
@@ -565,9 +527,7 @@ class VoiceActivityDetector:
 
         self.state.silence_duration += frame_duration
 
-        self._post_speech_frames.append(
-            audio_frame
-        )
+        self._post_speech_frames.append(audio_frame)
 
         self._post_speech_duration += frame_duration
 
@@ -577,10 +537,7 @@ class VoiceActivityDetector:
         # Not enough silence yet.
         # ----------------------------------------------------
 
-        if (
-            self.state.silence_duration
-            < self.silence_seconds
-        ):
+        if self.state.silence_duration < self.silence_seconds:
             return []
 
         # ----------------------------------------------------
@@ -591,17 +548,12 @@ class VoiceActivityDetector:
 
         speech_duration = self.state.speech_duration
 
-        self._speech_frames.extend(
-            self._post_speech_frames
-        )
+        self._speech_frames.extend(self._post_speech_frames)
 
-        speech_audio = b"".join(
-            self._speech_frames
-        )
+        speech_audio = b"".join(self._speech_frames)
 
         logger.info(
-            "🛑 VAD speech ended "
-            "duration=%.2f audio=%d bytes",
+            "🛑 VAD speech ended duration=%.2f audio=%d bytes",
             speech_duration,
             len(speech_audio),
         )
@@ -658,9 +610,8 @@ class VoiceActivityDetector:
         # ----------------------------------------------------
 
         for index in range(0, len(audio_frame), 2):
-
             sample = int.from_bytes(
-                audio_frame[index:index + 2],
+                audio_frame[index : index + 2],
                 byteorder="little",
                 signed=True,
             )
@@ -669,9 +620,7 @@ class VoiceActivityDetector:
 
             total_squared += normalized * normalized
 
-        rms = math.sqrt(
-            total_squared / sample_count
-        )
+        rms = math.sqrt(total_squared / sample_count)
 
         return rms >= self.energy_threshold
 
@@ -694,25 +643,17 @@ class VoiceActivityDetector:
         if self.pre_speech_seconds <= 0:
             return
 
-        self._pre_speech_frames.append(
-            audio_frame
-        )
+        self._pre_speech_frames.append(audio_frame)
 
         self._pre_speech_duration += frame_duration
 
         while (
-            self._pre_speech_duration
-            > self.pre_speech_seconds
+            self._pre_speech_duration > self.pre_speech_seconds
             and self._pre_speech_frames
         ):
+            removed = self._pre_speech_frames.popleft()
 
-            removed = (
-                self._pre_speech_frames.popleft()
-            )
-
-            self._pre_speech_duration -= (
-                self._frame_duration(removed)
-            )
+            self._pre_speech_duration -= self._frame_duration(removed)
 
     def _clear_pre_speech_buffer(self) -> None:
 
@@ -730,24 +671,17 @@ class VoiceActivityDetector:
         """
 
         if self.post_speech_seconds <= 0:
-
             self._clear_post_speech_buffer()
 
             return
 
         while (
-            self._post_speech_duration
-            > self.post_speech_seconds
+            self._post_speech_duration > self.post_speech_seconds
             and self._post_speech_frames
         ):
+            removed = self._post_speech_frames.popleft()
 
-            removed = (
-                self._post_speech_frames.popleft()
-            )
-
-            self._post_speech_duration -= (
-                self._frame_duration(removed)
-            )
+            self._post_speech_duration -= self._frame_duration(removed)
 
     def _clear_post_speech_buffer(self) -> None:
 
@@ -767,10 +701,7 @@ class VoiceActivityDetector:
         Calculate PCM16 frame duration from its byte length.
         """
 
-        return (
-            (len(audio_frame) // 2)
-            / self.sample_rate
-        )
+        return (len(audio_frame) // 2) / self.sample_rate
 
     # ========================================================
     # Reset

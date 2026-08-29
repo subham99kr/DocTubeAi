@@ -1,18 +1,9 @@
-export function saveToStorage(
-  key: string,
-  value: any
-) {
-  localStorage.setItem(
-    key,
-    JSON.stringify(value)
-  );
+export function saveToStorage(key: string, value: any) {
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
-export function getFromStorage<T>(
-  key: string
-): T | null {
-  const item =
-    localStorage.getItem(key);
+export function getFromStorage<T>(key: string): T | null {
+  const item = localStorage.getItem(key);
 
   if (!item) {
     return null;
@@ -21,8 +12,6 @@ export function getFromStorage<T>(
   return JSON.parse(item);
 }
 
-export function removeFromStorage(
-  key: string
-) {
+export function removeFromStorage(key: string) {
   localStorage.removeItem(key);
 }

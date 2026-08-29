@@ -1,8 +1,4 @@
-import {
-  useState,
-  useRef,
-  useEffect,
-} from "react";
+import { useState, useRef, useEffect } from "react";
 
 import PdfUploader from "../context/PdfUploader";
 import UrlInput from "../context/UrlInput";
@@ -13,100 +9,65 @@ type Props = {
   disabled?: boolean;
 };
 
-export default function ChatInput({
-  onSend,
-  disabled = false,
-}: Props) {
-  const [input, setInput] =
-    useState("");
+export default function ChatInput({ onSend, disabled = false }: Props) {
+  const [input, setInput] = useState("");
+  const [showPopover, setShowPopover] = useState(false);
+  const [showVoiceMode, setShowVoiceMode] = useState(false);
 
-  const [showPopover, setShowPopover] =
-    useState(false);
-
-  const [showVoiceMode, setShowVoiceMode] =
-    useState(false);
-
-  const popoverRef =
-    useRef<HTMLDivElement | null>(null);
-
+  const popoverRef = useRef<HTMLDivElement | null>(null);
 
   /*
    * Submit normal text message.
    */
   function handleSubmit() {
-    const message =
-      input.trim();
+    const message = input.trim();
 
     if (!message) {
       return;
     }
 
     onSend(message);
-
     setInput("");
   }
-
 
   /*
    * Add voice transcript to the
    * existing input.
    */
-  function handleTranscript(
-    text: string
-  ) {
-    const transcript =
-      text.trim();
+  function handleTranscript(text: string) {
+    const transcript = text.trim();
 
     if (!transcript) {
       return;
     }
 
     setInput((current) => {
-      const separator =
-        current.trim().length > 0
-          ? " "
-          : "";
+      const separator = current.trim().length > 0 ? " " : "";
 
-      return (
-        current +
-        separator +
-        transcript
-      );
+      return current + separator + transcript;
     });
   }
-
 
   /*
    * Close attachment popover
    * when clicking outside.
    */
   useEffect(() => {
-    function handleClickOutside(
-      event: MouseEvent
-    ) {
+    function handleClickOutside(event: MouseEvent) {
       if (
         popoverRef.current &&
-        !popoverRef.current.contains(
-          event.target as Node
-        )
+        !popoverRef.current.contains(event.target as Node)
       ) {
         setShowPopover(false);
       }
     }
 
-    document.addEventListener(
-      "mousedown",
-      handleClickOutside
-    );
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside
-      );
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
 
   /*
    * Voice Mode is a full-screen
@@ -132,23 +93,18 @@ export default function ChatInput({
     );
   }
 
-
   return (
     <div
       className="
         border-t
         border-[#30363d]
-
         px-2
         sm:px-4
         lg:px-6
-
         py-4
-
         bg-[#0e1117]
       "
     >
-
       <div
         className="
           relative
@@ -156,7 +112,6 @@ export default function ChatInput({
           mx-auto
         "
       >
-
         {/* ================================= */}
         {/* Attachment Popover */}
         {/* ================================= */}
@@ -166,27 +121,18 @@ export default function ChatInput({
             ref={popoverRef}
             className="
               absolute
-
               bottom-16
               left-0
-
               w-[95vw]
               sm:w-[340px]
               max-w-[340px]
-
               rounded-2xl
-
               border
               border-[#30363d]
-
               bg-[#161b22]/95
-
               backdrop-blur-xl
-
               shadow-2xl
-
               p-4
-
               z-50
             "
           >
@@ -197,7 +143,6 @@ export default function ChatInput({
                 gap-6
               "
             >
-
               {/* PDF Upload */}
 
               <div>
@@ -214,7 +159,6 @@ export default function ChatInput({
                 <PdfUploader />
               </div>
 
-
               {/* YouTube Context */}
 
               <div>
@@ -230,11 +174,9 @@ export default function ChatInput({
 
                 <UrlInput />
               </div>
-
             </div>
           </div>
         )}
-
 
         {/* ================================= */}
         {/* Input Container */}
@@ -244,25 +186,18 @@ export default function ChatInput({
           className="
             flex
             items-center
-
             gap-2
             sm:gap-3
-
             bg-[#1a1d24]
-
             border
             border-[#30363d]
-
             rounded-2xl
-
             px-2
             sm:px-3
-
             py-2
             sm:py-3
           "
         >
-
           {/* ================================= */}
           {/* Attachment Button */}
           {/* ================================= */}
@@ -274,37 +209,27 @@ export default function ChatInput({
                 return;
               }
 
-              setShowPopover(
-                (current) => !current
-              );
+              setShowPopover((current) => !current);
             }}
             disabled={disabled}
             title="Add context"
             className="
               w-10
               h-10
-
               shrink-0
-
               rounded-xl
-
               hover:bg-[#2a2f3a]
-
               transition
-
               flex
               items-center
               justify-center
-
               text-xl
-
               disabled:opacity-50
               disabled:cursor-not-allowed
             "
           >
             +
           </button>
-
 
           {/* ================================= */}
           {/* Voice Mode Button */}
@@ -335,28 +260,20 @@ export default function ChatInput({
             className="
               w-10
               h-10
-
               shrink-0
-
               rounded-xl
-
               hover:bg-[#2a2f3a]
-
               transition
-
               flex
               items-center
               justify-center
-
               text-xl
-
               disabled:opacity-50
               disabled:cursor-not-allowed
             "
           >
             🎙
           </button>
-
 
           {/* ================================= */}
           {/* Text Input */}
@@ -367,27 +284,17 @@ export default function ChatInput({
             disabled={disabled}
             rows={1}
             onChange={(event) => {
-              setInput(
-                event.target.value
-              );
+              setInput(event.target.value);
 
               /*
                * Auto resize textarea.
                */
-              event.target.style.height =
-                "auto";
-
-              event.target.style.height =
-                event.target.scrollHeight +
-                "px";
+              event.target.style.height = "auto";
+              event.target.style.height = event.target.scrollHeight + "px";
             }}
             onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                !event.shiftKey
-              ) {
+              if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
-
                 handleSubmit();
               }
             }}
@@ -395,24 +302,16 @@ export default function ChatInput({
             className="
               flex-1
               min-w-0
-
               bg-transparent
-
               outline-none
-
               text-white
-
               text-sm
               sm:text-base
-
               resize-none
-
               overflow-hidden
-
               max-h-40
             "
           />
-
 
           {/* ================================= */}
           {/* Send Button */}
@@ -421,34 +320,23 @@ export default function ChatInput({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={
-              disabled ||
-              !input.trim()
-            }
+            disabled={disabled || !input.trim()}
             title="Send message"
             className="
               shrink-0
-
               bg-blue-600
-
               hover:bg-blue-700
-
               px-4
               sm:px-5
-
               py-2
-
               rounded-xl
-
               transition
-
               disabled:opacity-50
               disabled:cursor-not-allowed
             "
           >
             ↑
           </button>
-
         </div>
       </div>
     </div>

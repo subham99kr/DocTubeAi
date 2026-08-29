@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def handle_pdf_upload(files):
     from api.upload_client import upload_pdfs_api
 

@@ -1,7 +1,6 @@
 import logging
 
 from state.state import State
-
 from tools.vector_search import (
     run_vector_search,
 )
@@ -26,35 +25,26 @@ async def vector_search_node(
     )
 
     try:
-
-        logger.info(
-            f"📚 Vector search "
-            f"for session: {session_id}"
-        )
+        logger.info(f"📚 Vector search for session: {session_id}")
 
         context = await run_vector_search(
             query,
             session_id,
         )
 
-        state["used_tools"].append(
-            "vector_search"
-        )
+        state["used_tools"].append("vector_search")
 
         if not context:
-
-            state["tool_outputs"].append({
-                "tool": "vector_search",
-                "success": False,
-                "summary": (
-                    "No relevant vector "
-                    "results found."
-                ),
-            })
+            state["tool_outputs"].append(
+                {
+                    "tool": "vector_search",
+                    "success": False,
+                    "summary": ("No relevant vector results found."),
+                }
+            )
 
             state["agent_scratchpad"].append(
-                "Vector search returned "
-                "no useful context."
+                "Vector search returned no useful context."
             )
 
             return state
@@ -65,44 +55,36 @@ async def vector_search_node(
             "content": context,
         }
 
-        state["retrieved_chunks"].append(
-            chunk
-        )
+        state["retrieved_chunks"].append(chunk)
 
-        state["tool_outputs"].append({
-            "tool": "vector_search",
-            "success": True,
-            "summary": (
-                "Retrieved vector "
-                "database context."
-            ),
-        })
+        state["tool_outputs"].append(
+            {
+                "tool": "vector_search",
+                "success": True,
+                "summary": ("Retrieved vector database context."),
+            }
+        )
 
         state["agent_scratchpad"].append(
-            "Vector search retrieved "
-            "relevant document context."
+            "Vector search retrieved relevant document context."
         )
 
-        state["sources_used"].append(
-            "vector_db"
-        )
+        state["sources_used"].append("vector_db")
 
         return state
 
     except Exception as e:
-
         logger.error(
-            f"❌ Vector search failed: "
-            f"{str(e)}",
+            f"❌ Vector search failed: {str(e)}",
             exc_info=True,
         )
 
-        state["tool_outputs"].append({
-            "tool": "vector_search",
-            "success": False,
-            "summary": (
-                "Vector search failed."
-            ),
-        })
+        state["tool_outputs"].append(
+            {
+                "tool": "vector_search",
+                "success": False,
+                "summary": ("Vector search failed."),
+            }
+        )
 
         return state

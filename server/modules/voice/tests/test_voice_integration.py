@@ -40,7 +40,6 @@ import io
 import av
 import numpy as np
 import pytest
-
 from modules.voice.audio_decoder import AudioDecoder
 from modules.voice.models import (
     TranscriptionResult,
@@ -51,7 +50,6 @@ from modules.voice.vad import (
     VADEventType,
     create_vad,
 )
-
 
 # ============================================================
 # Constants

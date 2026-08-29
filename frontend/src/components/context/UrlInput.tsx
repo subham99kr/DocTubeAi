@@ -6,14 +6,12 @@ import { useChat } from "../../context/ChatContext";
 
 import { useAuth } from "../../context/AuthContext";
 
-const YOUTUBE_REGEX =
-  /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+const YOUTUBE_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
 
 export default function UrlInput() {
   const [url, setUrl] = useState("");
 
-  const { sessionId, urls, setUrls } =
-    useChat();
+  const { sessionId, urls, setUrls } = useChat();
 
   const { token } = useAuth();
 
@@ -26,17 +24,13 @@ export default function UrlInput() {
     }
 
     try {
-      const response =
-        await uploadYoutubeTranscript(
-          url,
-          sessionId,
-          token || undefined
-        );
+      const response = await uploadYoutubeTranscript(
+        url,
+        sessionId,
+        token || undefined,
+      );
 
-      setUrls([
-        ...urls,
-        response.title || "YouTube Video",
-      ]);
+      setUrls([...urls, response.title || "YouTube Video"]);
 
       setUrl("");
     } catch (error) {
@@ -50,9 +44,7 @@ export default function UrlInput() {
         <input
           type="text"
           value={url}
-          onChange={(e) =>
-            setUrl(e.target.value)
-          }
+          onChange={(e) => setUrl(e.target.value)}
           placeholder="Paste YouTube URL..."
           className="flex-1 bg-[#1a1d24] border border-[#30363d] rounded-xl px-4 py-3 outline-none"
         />

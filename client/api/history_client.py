@@ -2,6 +2,7 @@
 import requests
 from utils.config import BACKEND_URL
 
+
 def load_history(session_id, token=None):
     """
     Fetches the full session state including chat history, 

@@ -1,22 +1,18 @@
 # python -m pytest modules\voice\tests\test_turn_detector.py -v
 
 import pytest
-
 from modules.voice.models import (
     SpeechStarted,
     TranscriptChanged,
     TurnCompleted,
 )
-
 from modules.voice.turn_detector import (
     TurnDetector,
 )
-
 from modules.voice.vad import (
     VADEvent,
     VADEventType,
 )
-
 
 # ============================================================
 # Helpers

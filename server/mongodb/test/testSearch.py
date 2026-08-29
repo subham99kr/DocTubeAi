@@ -1,8 +1,10 @@
 # run_vector_search_with_limit.py
-import traceback
-from pymongo import MongoClient
 import os
+import traceback
+
 from dotenv import load_dotenv
+from pymongo import MongoClient
+
 load_dotenv()
 
 URI = os.environ.get("MONGODB_URI_STRING")

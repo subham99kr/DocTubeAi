@@ -1,7 +1,10 @@
-from langchain_core.messages import HumanMessage, AIMessage
-from state.state import State
 import logging
+
+from langchain_core.messages import AIMessage, HumanMessage
+from state.state import State
+
 logger = logging.getLogger(__name__)
+
 
 async def summary_node(state: State, summary_llm):
     """
@@ -15,8 +18,17 @@ async def summary_node(state: State, summary_llm):
 
     # 1. IDENTIFY THE LAST TURN
     # skiping internal ToolMessages to keep the summary prompt clean.
-    last_human = next((m.content for m in reversed(messages) if isinstance(m, HumanMessage)), "")
-    last_ai = next((m.content for m in reversed(messages) if isinstance(m, AIMessage) and not m.tool_calls), "")
+    last_human = next(
+        (m.content for m in reversed(messages) if isinstance(m, HumanMessage)), ""
+    )
+    last_ai = next(
+        (
+            m.content
+            for m in reversed(messages)
+            if isinstance(m, AIMessage) and not m.tool_calls
+        ),
+        "",
+    )
 
     if not last_human or not last_ai:
         return {}
@@ -33,10 +45,10 @@ async def summary_node(state: State, summary_llm):
         "- Example: Instead of 'User sent @app.get...', write 'User provided a FastAPI route for review'.\n"
         "- This keeps the memory clean for future technical questions."
     )
-    
+
     # 3. EXECUTE
     response = await summary_llm.ainvoke(prompt)
     # logger.info(f"last ai = {last_ai}")
     # logger.info(f"summary:{response}")
-    
+
     return {"summary": response.content}

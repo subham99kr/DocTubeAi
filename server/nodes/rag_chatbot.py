@@ -1,12 +1,11 @@
 import logging
 
 from langchain_core.messages import (
-    HumanMessage,
     AIMessage,
+    HumanMessage,
 )
-
-from state.state import State
 from modules.llm import get_chatbot_prompt
+from state.state import State
 
 logger = logging.getLogger(__name__)
 
@@ -48,14 +47,11 @@ async def rag_chatbot_node(
     """
 
     try:
-
         # =================================================
         # LLM
         # =================================================
 
-        llm = llm_factory().bind(
-            max_tokens=MAX_OUTPUT_TOKENS
-        )
+        llm = llm_factory().bind(max_tokens=MAX_OUTPUT_TOKENS)
 
         # response_mode = state.get(
         #     "response_mode",
@@ -78,38 +74,25 @@ async def rag_chatbot_node(
         )[-MAX_MESSAGE_HISTORY:]
 
         for msg in raw_messages:
-
             content = getattr(
                 msg,
                 "content",
                 "",
             )
 
-            content = str(content)[
-                :MAX_MESSAGE_SIZE
-            ]
+            content = str(content)[:MAX_MESSAGE_SIZE]
 
             if isinstance(
                 msg,
                 HumanMessage,
             ):
-
-                recent_messages.append(
-                    HumanMessage(
-                        content=content
-                    )
-                )
+                recent_messages.append(HumanMessage(content=content))
 
             elif isinstance(
                 msg,
                 AIMessage,
             ):
-
-                recent_messages.append(
-                    AIMessage(
-                        content=content
-                    )
-                )
+                recent_messages.append(AIMessage(content=content))
 
         # =================================================
         # RETRIEVED CHUNKS
@@ -128,10 +111,7 @@ async def rag_chatbot_node(
 
         current_context_size = 0
 
-        for idx, chunk in enumerate(
-            selected_chunks
-        ):
-
+        for idx, chunk in enumerate(selected_chunks):
             source_type = chunk.get(
                 "source_type",
                 "unknown",
@@ -162,15 +142,10 @@ async def rag_chatbot_node(
             # GLOBAL CONTEXT BUDGET
             # ---------------------------------------------
 
-            if (
-                current_context_size + len(text)
-                > MAX_TOTAL_CONTEXT
-            ):
+            if current_context_size + len(text) > MAX_TOTAL_CONTEXT:
                 break
 
-            current_context_size += len(
-                text
-            )
+            current_context_size += len(text)
 
             rag_context.append(
                 f"""
@@ -183,35 +158,22 @@ CONTENT:
 """
             )
 
-        final_context = "\n\n".join(
-            rag_context
-        )
+        final_context = "\n\n".join(rag_context)
 
         # =================================================
         # BUILD TEMPORARY ENHANCED QUERY
         # =================================================
 
-        enhanced_messages = list(
-            recent_messages
-        )
+        enhanced_messages = list(recent_messages)
 
-        if (
-            final_context
-            and enhanced_messages
-        ):
-
-            last_message = (
-                enhanced_messages[-1]
-            )
+        if final_context and enhanced_messages:
+            last_message = enhanced_messages[-1]
 
             if hasattr(
                 last_message,
                 "content",
             ):
-
-                original_query = (
-                    last_message.content
-                )
+                original_query = last_message.content
 
                 enhanced_query = f"""
 Answer the user's question using the retrieved evidence.
@@ -228,29 +190,19 @@ Answer the user's question using the retrieved evidence.
                 # IMPORTANT:
                 # Do NOT mutate original memory
 
-                enhanced_messages = (
-                    enhanced_messages[:-1]
-                    + [
-                        HumanMessage(
-                            content=enhanced_query
-                        )
-                    ]
-                )
+                enhanced_messages = enhanced_messages[:-1] + [
+                    HumanMessage(content=enhanced_query)
+                ]
 
         # =================================================
         # DEBUG LOGGING
         # =================================================
 
-        logger.info(
-            f"Total messages: {len(enhanced_messages)}"
-        )
+        logger.info(f"Total messages: {len(enhanced_messages)}")
 
         total_chars = 0
 
-        for idx, msg in enumerate(
-            enhanced_messages
-        ):
-
+        for idx, msg in enumerate(enhanced_messages):
             content = getattr(
                 msg,
                 "content",
@@ -261,40 +213,33 @@ Answer the user's question using the retrieved evidence.
 
             total_chars += size
 
-            logger.info(
-                f"Message {idx} size: {size}"
-            )
+            logger.info(f"Message {idx} size: {size}")
 
-        logger.info(
-            f"Total prompt chars: {total_chars}"
-        )
+        logger.info(f"Total prompt chars: {total_chars}")
 
         # =================================================
         # GENERATE RESPONSE
         # =================================================
 
-        response = await chain.ainvoke({
-            "messages": enhanced_messages,
-        })
+        response = await chain.ainvoke(
+            {
+                "messages": enhanced_messages,
+            }
+        )
 
         # =================================================
         # SAVE RESPONSE
         # =================================================
 
-        state["messages"].append(
-            response
-        )
+        state["messages"].append(response)
 
         state["route"] = "end"
 
-        logger.info(
-            "RAG chatbot response generated."
-        )
+        logger.info("RAG chatbot response generated.")
 
         return state
 
     except Exception as e:
-
         logger.error(
             f"RAG chatbot node error: {e}",
             exc_info=True,

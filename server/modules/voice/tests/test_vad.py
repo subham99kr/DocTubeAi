@@ -5,7 +5,6 @@ from modules.voice.vad import (
     VoiceActivityDetector,
 )
 
-
 SAMPLE_RATE = 16000
 FRAME_DURATION_MS = 20
 

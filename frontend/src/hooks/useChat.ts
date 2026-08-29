@@ -19,7 +19,6 @@ export function useChat() {
   const { token } = useAuth();
   const navigate = useNavigate();
 
-
   async function sendMessage(query: string) {
     if (!query.trim() || loading) return;
 
@@ -60,24 +59,16 @@ export function useChat() {
       }, 2000);
     };
 
-    const currentSession = sessions.find(
-      (s) => s.session_id === sessionId
-    );
+    const currentSession = sessions.find((s) => s.session_id === sessionId);
 
     if (currentSession?.title === "New Chat") {
-      const title =
-        query.length > 30
-          ? query.slice(0, 30) + "..."
-          : query;
+      const title = query.length > 30 ? query.slice(0, 30) + "..." : query;
 
       setSessions((prev) =>
         prev.map((session) =>
-          session.session_id === sessionId
-            ? { ...session, title }
-            : session
-        )
+          session.session_id === sessionId ? { ...session, title } : session,
+        ),
       );
-      
     }
 
     setMessages((prev) => [
@@ -113,10 +104,7 @@ export function useChat() {
 
           finalResponse += tokenChunk;
 
-          finalResponse = finalResponse.replace(
-            /`\s*`\s*`/g,
-            "```"
-          );
+          finalResponse = finalResponse.replace(/`\s*`\s*`/g, "```");
 
           if (timeoutId) return;
 
@@ -140,24 +128,18 @@ export function useChat() {
         onDone() {
           console.log("STREAM DONE");
 
-          if (inactivityTimer)
-            clearTimeout(inactivityTimer);
+          if (inactivityTimer) clearTimeout(inactivityTimer);
 
           stopStreaming();
 
           //silently navigate to that link
-          navigate(
-            `/chats/history/${sessionId}`,
-            { replace: true }
-          );
-
+          navigate(`/chats/history/${sessionId}`, { replace: true });
         },
       });
     } catch (error) {
       console.error("CHAT ERROR:", error);
 
-      if (inactivityTimer)
-        clearTimeout(inactivityTimer);
+      if (inactivityTimer) clearTimeout(inactivityTimer);
 
       setLoading(false);
 

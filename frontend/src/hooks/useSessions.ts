@@ -1,11 +1,6 @@
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 
-import {
-  useParams,
-} from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import { loadHome } from "../api/homeApi";
 
@@ -16,7 +11,6 @@ import { useAuth } from "../context/AuthContext";
 import { useChat } from "../context/ChatContext";
 
 export function useSessions() {
-
   const { token } = useAuth();
 
   const {
@@ -41,14 +35,11 @@ export function useSessions() {
    * urlSessionId =
    * 4bf7e2a4-db9f-4ccb-ad70-2d32026aeb9d
    */
-  const {
-    sessionId: urlSessionId,
-  } = useParams<{
+  const { sessionId: urlSessionId } = useParams<{
     sessionId: string;
   }>();
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   /*
    * =========================================================
@@ -87,7 +78,6 @@ export function useSessions() {
    * We do NOT navigate here.
    */
   useEffect(() => {
-
     if (!urlSessionId) {
       return;
     }
@@ -102,13 +92,8 @@ export function useSessions() {
       return;
     }
 
-    switchSession(
-      urlSessionId
-    );
-
-  }, [
-    urlSessionId,
-  ]);
+    switchSession(urlSessionId);
+  }, [urlSessionId]);
 
   /*
    * =========================================================
@@ -117,65 +102,41 @@ export function useSessions() {
    */
 
   async function fetchSessions() {
-
     try {
-
       setLoading(true);
 
-      const data =
-        await loadHome(
-          token || undefined
-        );
+      const data = await loadHome(token || undefined);
 
-      console.log(
-        "Loaded Sessions:",
-        data
-      );
+      console.log("Loaded Sessions:", data);
 
       setSessions((prev) => {
-
-        const incoming =
-          data.sessions || [];
+        const incoming = data.sessions || [];
 
         /*
          * Preserve the current temporary
          * "New Chat" if it has not been
          * persisted yet.
          */
-        const tempSession =
-          prev.find(
-            (session) =>
-              session.session_id ===
-                sessionId &&
-              session.title ===
-                "New Chat"
-          );
+        const tempSession = prev.find(
+          (session) =>
+            session.session_id === sessionId && session.title === "New Chat",
+        );
 
         if (tempSession) {
-
           return [
             tempSession,
 
             ...incoming.filter(
-              (session: any) =>
-                session.session_id !==
-                tempSession.session_id
+              (session: any) => session.session_id !== tempSession.session_id,
             ),
           ];
         }
 
         return incoming;
       });
-
     } catch (error) {
-
-      console.error(
-        "Failed loading sessions:",
-        error
-      );
-
+      console.error("Failed loading sessions:", error);
     } finally {
-
       setLoading(false);
     }
   }
@@ -186,29 +147,15 @@ export function useSessions() {
    * =========================================================
    */
 
-  async function switchSession(
-    id: string
-  ) {
-
+  async function switchSession(id: string) {
     try {
-
       setLoading(true);
 
-      console.log(
-        "Switching session:",
-        id
-      );
+      console.log("Switching session:", id);
 
-      const data =
-        await loadHistory(
-          id,
-          token || undefined
-        );
+      const data = await loadHistory(id, token || undefined);
 
-      console.log(
-        "Loaded Session:",
-        data
-      );
+      console.log("Loaded Session:", data);
 
       /*
        * Update ChatContext.
@@ -219,43 +166,20 @@ export function useSessions() {
        *
        * URL was already changed by Sidebar.
        */
-      setSessionId(
-        data.session_id
-      );
+      setSessionId(data.session_id);
 
-      setMessages(
-        data.history || []
-      );
+      setMessages(data.history || []);
 
-      setUploadedPdfs(
-        data.pdfs_uploaded || []
-      );
+      setUploadedPdfs(data.pdfs_uploaded || []);
 
-      const mappedUrls = (
-        data.url_links || []
-      ).map(
-        (item: any) =>
-          item.title
-      );
+      const mappedUrls = (data.url_links || []).map((item: any) => item.title);
 
-      setUrls(
-        mappedUrls
-      );
+      setUrls(mappedUrls);
 
-      sessionStorage.setItem(
-        "history_loaded",
-        "true"
-      );
-
+      sessionStorage.setItem("history_loaded", "true");
     } catch (error) {
-
-      console.error(
-        "Failed switching session:",
-        error
-      );
-
+      console.error("Failed switching session:", error);
     } finally {
-
       setLoading(false);
     }
   }

@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    
+    image: subh99kr/doctubeai-frontend:latest
 
     container_name: doctubeai-frontend
 

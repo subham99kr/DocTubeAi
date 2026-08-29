@@ -1,8 +1,9 @@
-from pymongo import ReplaceOne
 import logging
 from uuid import uuid4
+
 from global_modules.embeddings import embeddings
 from global_modules.mongo_collections import collection
+from pymongo import ReplaceOne
 
 logger = logging.getLogger(__name__)
 
